@@ -1,0 +1,13 @@
+# AGENTS.md
+
+## Escopo
+Estas instruções se aplicam ao diretório `insect-apocalypse-vn/` e subdiretórios.
+
+## Objetivo
+- Manter a estrutura de visual novel sobre apocalipse de insetos.
+- Preservar organização por `story/` e `assets/`.
+
+## Convenções
+- Use português do Brasil nos textos do jogo.
+- Mantenha o JSON de roteiro válido e legível.
+- Evite dependências externas desnecessárias para a estrutura base.
