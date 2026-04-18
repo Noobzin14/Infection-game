@@ -1,0 +1,21 @@
+{
+  "chapter": "1",
+  "title": "Ecos no Enxame",
+  "scenes": [
+    {
+      "id": "scene_001",
+      "background": "backgrounds/city-night.jpg",
+      "text": "A cidade escurece enquanto o zumbido toma as ruas.",
+      "choices": [
+        {
+          "text": "Seguir para o laboratório",
+          "next_scene": "scene_002"
+        },
+        {
+          "text": "Voltar para casa",
+          "next_scene": "scene_003"
+        }
+      ]
+    }
+  ]
+}
