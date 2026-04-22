@@ -3,13 +3,62 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Insect Apocalypse VN</title>
+    <title>INFECTION</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <main class="game-shell">
-      <h1>Insect Apocalypse VN</h1>
-      <p>Estrutura inicial criada com sucesso.</p>
+    <main id="app" class="app">
+      <section id="tela-abertura" class="tela tela-ativa">
+        <div class="abertura-conteudo">
+          <h1 class="titulo-jogo">INFECTION</h1>
+          <p class="subtitulo-jogo">Sobreviva ao terror</p>
+          <button id="btn-iniciar" class="botao-principal botao-fade">INICIAR</button>
+        </div>
+      </section>
+
+      <section id="tela-nome" class="tela" aria-hidden="true">
+        <div class="painel-nome">
+          <h2>Nome do protagonista</h2>
+          <label for="input-nome">Digite seu nome:</label>
+          <input
+            id="input-nome"
+            type="text"
+            maxlength="20"
+            autocomplete="off"
+            placeholder="Máx. 20 caracteres"
+          />
+          <button id="btn-confirmar" class="botao-principal">CONFIRMAR</button>
+          <p id="erro-nome" class="mensagem-erro" aria-live="polite"></p>
+        </div>
+      </section>
+
+      <section id="tela-jogo" class="tela" aria-hidden="true">
+        <div id="area-background" class="area-background">
+          <div class="overlay-status">
+            <span id="status-vida">Vida: 100</span>
+            <span id="status-sanidade">Sanidade: 100</span>
+            <span id="status-inventario">Inventário: 0/5</span>
+          </div>
+        </div>
+
+        <div class="area-dialogo">
+          <div class="cabecalho-dialogo">
+            <strong id="nome-personagem">-</strong>
+          </div>
+          <p id="texto-dialogo">...</p>
+          <div id="escolhas-container" class="escolhas-container"></div>
+        </div>
+
+        <button id="btn-historico" class="btn-historico" aria-label="Abrir histórico">📜</button>
+
+        <aside id="painel-historico" class="painel-historico" aria-hidden="true">
+          <div class="painel-historico-topo">
+            <h3>Histórico</h3>
+            <button id="btn-fechar-historico" aria-label="Fechar histórico">✖</button>
+          </div>
+          <ul id="lista-historico"></ul>
+        </aside>
+      </section>
     </main>
 
     <script src="game.js"></script>
