@@ -1,21 +1,221 @@
 :root {
-  color-scheme: dark;
+  --verde-militar: #2d4a1e;
+  --vermelho-sangue: #8b0000;
+  --preto-detalhe: #0a0a0a;
+  --preto-transparente: rgba(10, 10, 10, 0.85);
+  --vermelho-hover: #5a0000;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: "Courier New", Courier, monospace;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
-  display: grid;
-  place-items: center;
-  background: radial-gradient(circle at top, #1d1d24, #09090b 65%);
-  color: #e8e8ef;
-  font-family: system-ui, sans-serif;
+  background: var(--verde-militar);
+  color: #f2f2f2;
 }
 
-.game-shell {
+.app,
+.tela {
+  width: 100%;
+  height: 100vh;
+}
+
+.tela {
+  display: none;
+}
+
+.tela-ativa {
+  display: flex;
+}
+
+#abertura-conteudo,
+.abertura-conteudo,
+.painel-nome {
+  margin: auto;
+  text-align: center;
+}
+
+.titulo-jogo {
+  margin: 0;
+  font-size: clamp(2.8rem, 8vw, 5rem);
+  letter-spacing: 0.25rem;
+  color: #fff;
+  text-shadow: 0 0 18px rgba(139, 0, 0, 0.7);
+}
+
+.subtitulo-jogo {
+  margin: 1rem 0 2rem;
+  color: #f0f0f0;
+}
+
+.botao-principal,
+.btn-historico,
+#btn-fechar-historico {
+  background: var(--preto-detalhe);
+  color: #fff;
+  border: 1px solid #1f1f1f;
+  border-left: 4px solid var(--vermelho-sangue);
+  padding: 0.8rem 1.1rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.botao-principal:hover,
+.btn-historico:hover,
+#btn-fechar-historico:hover {
+  background: var(--vermelho-hover);
+}
+
+.botao-fade {
+  opacity: 0;
+  animation: fadeIn 1.5s ease forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+#tela-nome {
+  align-items: center;
+  justify-content: center;
+}
+
+.painel-nome {
+  width: min(90%, 480px);
   padding: 2rem;
-  border: 1px solid #343448;
-  border-radius: 12px;
-  background: rgba(20, 20, 30, 0.8);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  background: rgba(10, 10, 10, 0.78);
+  border: 1px solid #1a1a1a;
+  border-left: 4px solid var(--vermelho-sangue);
+}
+
+#input-nome {
+  width: 100%;
+  margin: 0.8rem 0 1rem;
+  padding: 0.75rem;
+  background: #111;
+  border: 1px solid #2f2f2f;
+  color: #f4f4f4;
+}
+
+.mensagem-erro {
+  min-height: 1.2rem;
+  color: #ff3b3b;
+  margin-top: 0.8rem;
+}
+
+#tela-jogo {
+  position: relative;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.area-background {
+  height: 70%;
+  background-color: #1b2d12;
+  background-size: cover;
+  background-position: center;
+  border-bottom: 2px solid var(--vermelho-sangue);
+  position: relative;
+}
+
+.overlay-status {
+  position: absolute;
+  top: 0.8rem;
+  left: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 0.55rem;
+}
+
+.area-dialogo {
+  height: 30%;
+  background: var(--preto-transparente);
+  border-top: 3px solid var(--vermelho-sangue);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.cabecalho-dialogo {
+  color: #fff;
+  letter-spacing: 0.04rem;
+}
+
+#texto-dialogo {
+  margin: 0;
+  line-height: 1.4;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.escolhas-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.botao-escolha {
+  min-width: 220px;
+}
+
+.btn-historico {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 12;
+}
+
+.painel-historico {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 300px;
+  height: 100%;
+  background: rgba(10, 10, 10, 0.95);
+  border-left: 2px solid var(--vermelho-sangue);
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  z-index: 20;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.painel-historico.aberto {
+  transform: translateX(0);
+}
+
+.painel-historico-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
+}
+
+#lista-historico {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+#lista-historico li {
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid #222;
+  font-size: 0.92rem;
 }
