@@ -151,7 +151,13 @@ function renderCena(id) {
     elementos.areaBackground.style.backgroundImage = '';
   }
 
+<<<<<<< codex/implement-complete-game-files-cs21uz
+  const textoCena = typeof cena.texto === 'string' ? cena.texto : cena.text;
+
+  mostrarTextoGradual(textoCena || '', () => {
+=======
   mostrarTextoGradual(cena.texto || '', () => {
+>>>>>>> main
     (cena.choices || []).forEach((escolha) => {
       const botao = document.createElement('button');
       botao.className = 'botao-principal botao-escolha';
