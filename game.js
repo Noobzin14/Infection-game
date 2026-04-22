@@ -194,11 +194,11 @@ async function carregarCapitulo() {
 
     const dados = await resposta.json();
     cenas = {};
-    for (const cena of dados.scenes || []) {
+    for (const cena of dados.cenas || []) {
       cenas[cena.id] = cena;
     }
 
-    const primeiraCena = (dados.scenes && dados.scenes[0] && dados.scenes[0].id) || null;
+    const primeiraCena = (dados.cenas && dados.cenas[0] && dados.cenas[0].id) || null;
     if (!primeiraCena) {
       throw new Error('Nenhuma cena encontrada no capítulo.');
     }
