@@ -41,9 +41,19 @@ jobs:
 
       - name: Revisão de impacto via GitHub Models
         id: revisao
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          CONTEXTO=$(cat contexto.txt | head -c 8000)
-          PROMPT="Você é uma IA revisora de código para um projeto de Visual Novel RPG em HTML/JS/CSS puro chamado Infection Game.
+          python3 << 'EOF'
+          import json
+          import os
+          import urllib.request
+          import urllib.error
+
+          with open("contexto.txt", "r", encoding="utf-8") as arquivo:
+              contexto = arquivo.read()[:8000]
+
+          prompt = f"""Você é uma IA revisora de código para um projeto de Visual Novel RPG em HTML/JS/CSS puro chamado Infection Game.
 
           Analise o diff do PR abaixo considerando a arquitetura, invariantes e mapa do repositório fornecidos.
 
@@ -60,36 +70,54 @@ jobs:
           Se não houver riscos, diga claramente.
 
           CONTEXTO DO PROJETO E DIFF:
-          $CONTEXTO"
+          {contexto}"""
 
-          RESPONSE=$(curl -s -X POST \\\n            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \\\n            -H "Content-Type: application/json" \\\n            "https://models.inference.ai.azure.com/chat/completions" \\\n            -d "{
-              \"model\": \"gpt-4o-mini\",
-              \"messages\": [{
-                \"role\": \"user\",
-                \"content\": $(echo \"$PROMPT\" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')
-              }],
-              \"max_tokens\": 1000,
-              \"temperature\": 0.3
-            }")
+          payload = {
+              "model": "gpt-4o-mini",
+              "messages": [{"role": "user", "content": prompt}],
+              "max_tokens": 1000,
+              "temperature": 0.3
+          }
 
-          REVIEW=$(echo "$RESPONSE" | python3 -c "
-          import json, sys
-          data = json.load(sys.stdin)
-          if 'choices' in data and len(data['choices']) > 0:
-              print(data['choices'][0]['message']['content'])
-          else:
-              print('Erro ao obter revisão. Verifique os logs do Actions.')
-          ")
+          request = urllib.request.Request(
+              "https://models.inference.ai.azure.com/chat/completions",
+              data=json.dumps(payload).encode("utf-8"),
+              headers={
+                  "Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}",
+                  "Content-Type": "application/json"
+              },
+              method="POST"
+          )
 
-          echo "review<<EOF" >> $GITHUB_OUTPUT
-          echo "$REVIEW" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          review = "Erro ao obter revisão. Verifique os logs do Actions."
+          try:
+              with urllib.request.urlopen(request) as response:
+                  data = json.loads(response.read().decode("utf-8"))
+                  choices = data.get("choices", [])
+                  if choices:
+                      review = choices[0].get("message", {}).get("content", review)
+          except urllib.error.HTTPError as error:
+              body = error.read().decode("utf-8", errors="replace")
+              review = (
+                  "Erro HTTP ao obter revisão via GitHub Models. "
+                  f"Status: {error.code}. Resposta: {body[:500]}"
+              )
+          except Exception as error:
+              review = f"Erro ao obter revisão. Detalhe: {str(error)}"
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write("review<<EOF\n")
+              output.write(review)
+              output.write("\nEOF\n")
+          EOF
 
       - name: Postar comentário no PR
         uses: actions/github-script@v7
+        env:
+          REVIEW: ${{ steps.revisao.outputs.review }}
         with:
           script: |
-            const review = `${{ steps.revisao.outputs.review }}`;
+            const review = process.env.REVIEW || 'Sem conteúdo de revisão.';
             const diffSize = '${{ steps.diff.outputs.diff_size }}';
 
             const body = `## 🤖 Revisão de Impacto — GitHub Models (GPT-4o mini)
