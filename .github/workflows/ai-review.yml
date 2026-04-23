@@ -1,0 +1,112 @@
+name: Revisão de PR com IA
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  models: read
+
+jobs:
+  revisar-impacto:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Obter diff do PR
+        id: diff
+        run: |
+          git diff origin/${{ github.base_ref }}...HEAD > pr_diff.txt
+          echo "diff_size=$(wc -l < pr_diff.txt)" >> $GITHUB_OUTPUT
+
+      - name: Montar contexto do projeto
+        id: contexto
+        run: |
+          echo "=== ARCHITECTURE.md ===" > contexto.txt
+          cat ARCHITECTURE.md >> contexto.txt
+          echo "" >> contexto.txt
+          echo "=== INVARIANTS.md ===" >> contexto.txt
+          cat INVARIANTS.md >> contexto.txt
+          echo "" >> contexto.txt
+          echo "=== REPO_MAP.md ===" >> contexto.txt
+          cat REPO_MAP.md >> contexto.txt
+          echo "" >> contexto.txt
+          echo "=== DIFF DO PR ===" >> contexto.txt
+          cat pr_diff.txt >> contexto.txt
+
+      - name: Revisão de impacto via GitHub Models
+        id: revisao
+        run: |
+          CONTEXTO=$(cat contexto.txt | head -c 8000)
+          PROMPT="Você é uma IA revisora de código para um projeto de Visual Novel RPG em HTML/JS/CSS puro chamado Infection Game.
+
+          Analise o diff do PR abaixo considerando a arquitetura, invariantes e mapa do repositório fornecidos.
+
+          Foque em:
+          1. BLAST RADIUS: O que pode quebrar além dos arquivos alterados?
+          2. CONTRATOS: Algum contrato entre arquivos foi violado? (ex: IDs de cena, variáveis globais, estrutura JSON)
+          3. INVARIANTES: Algum dos 13 invariantes documentados foi violado?
+          4. ESTADO GLOBAL: Mudanças em variáveis globais do game.js podem causar efeitos colaterais?
+          5. FLUXO PRINCIPAL: O fluxo tela-abertura → tela-nome → tela-jogo foi preservado?
+
+          Responda em português brasileiro.
+          Seja direto e objetivo.
+          Use emojis para facilitar leitura: ✅ ok, ⚠️ atenção, 🔴 crítico.
+          Se não houver riscos, diga claramente.
+
+          CONTEXTO DO PROJETO E DIFF:
+          $CONTEXTO"
+
+          RESPONSE=$(curl -s -X POST \\\n            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \\\n            -H "Content-Type: application/json" \\\n            "https://models.inference.ai.azure.com/chat/completions" \\\n            -d "{
+              \"model\": \"gpt-4o-mini\",
+              \"messages\": [{
+                \"role\": \"user\",
+                \"content\": $(echo \"$PROMPT\" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')
+              }],
+              \"max_tokens\": 1000,
+              \"temperature\": 0.3
+            }")
+
+          REVIEW=$(echo "$RESPONSE" | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          if 'choices' in data and len(data['choices']) > 0:
+              print(data['choices'][0]['message']['content'])
+          else:
+              print('Erro ao obter revisão. Verifique os logs do Actions.')
+          ")
+
+          echo "review<<EOF" >> $GITHUB_OUTPUT
+          echo "$REVIEW" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Postar comentário no PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const review = `${{ steps.revisao.outputs.review }}`;
+            const diffSize = '${{ steps.diff.outputs.diff_size }}';
+
+            const body = `## 🤖 Revisão de Impacto — GitHub Models (GPT-4o mini)
+
+            > Análise automática de blast radius, contratos e invariantes.
+            > Linhas no diff: **${diffSize}**
+
+            ---
+
+            ${review}
+
+            ---
+            *Gerado automaticamente pelo pipeline AI Workflow. Ver \`AI_WORKFLOW.md\` para detalhes.*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
