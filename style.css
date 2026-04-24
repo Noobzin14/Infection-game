@@ -127,6 +127,10 @@ body {
   position: relative;
 }
 
+.bg-bunker-luz {
+  background-color: #1a3010;
+}
+
 .overlay-status {
   position: absolute;
   top: 0.8rem;
