@@ -152,34 +152,38 @@ function renderCena(id) {
   }
 
   const textoCena = typeof cena.texto === 'string' ? cena.texto : cena.text;
+  const escolhasCena = Array.isArray(cena.escolhas) ? cena.escolhas : cena.choices;
 
   mostrarTextoGradual(textoCena || '', () => {
-    (cena.choices || []).forEach((escolha) => {
+    (escolhasCena || []).forEach((escolha) => {
+      const textoEscolha = typeof escolha.texto === 'string' ? escolha.texto : escolha.text;
+      const proximaCena = typeof escolha.proxima === 'string' ? escolha.proxima : escolha.next_scene;
+
       const botao = document.createElement('button');
       botao.className = 'botao-principal botao-escolha';
-      botao.textContent = escolha.text;
+      botao.textContent = textoEscolha || 'Continuar';
 
       botao.addEventListener('click', () => {
         const podeAvancar = aplicarEfeitos(escolha.efeito);
         if (!podeAvancar) {
-          registrarHistorico(`Escolha bloqueada por inventário cheio: ${escolha.text}`);
+          registrarHistorico(`Escolha bloqueada por inventário cheio: ${textoEscolha || 'Sem texto'}`);
           return;
         }
 
-        registrarHistorico(`Escolha: ${escolha.text}`);
+        registrarHistorico(`Escolha: ${textoEscolha || 'Sem texto'}`);
         elementos.telaJogo.style.opacity = '0';
         elementos.telaJogo.style.transition = 'opacity 0.3s ease';
 
         setTimeout(() => {
           elementos.telaJogo.style.opacity = '1';
-          renderCena(escolha.next_scene);
+          renderCena(proximaCena);
         }, 300);
       });
 
       elementos.escolhasContainer.appendChild(botao);
     });
 
-    if (!cena.choices || cena.choices.length === 0) {
+    if (!escolhasCena || escolhasCena.length === 0) {
       criarBotaoRecomecar();
     }
   });
