@@ -1,0 +1,362 @@
+{
+  "_instrucoes": "Banco de dados de itens do Infection Game. Separado por categoria. Referenciado pelo game.js para combate, craft e equipamento.",
+
+  "armas": {
+    "brancas": [
+      {
+        "id": "faca_enferrujada",
+        "nome": "Faca Enferrujada",
+        "descricao": "Uma faca de cozinha corroída pelo tempo. Corta, mas pode infectar.",
+        "dano": { "min": 8, "max": 14 },
+        "durabilidade": 30,
+        "peso": 0.5,
+        "partes_alvo": ["cabeca", "tronco", "membros"],
+        "efeitos": ["sangramento"],
+        "chance_efeito": 0.2,
+        "craft_resultado": false,
+        "raridade": "comum"
+      },
+      {
+        "id": "machado_lenhador",
+        "nome": "Machado de Lenhador",
+        "descricao": "Pesado e lento, mas capaz de partir quitina grossa.",
+        "dano": { "min": 22, "max": 35 },
+        "durabilidade": 60,
+        "peso": 3.0,
+        "partes_alvo": ["cabeca", "tronco", "membros"],
+        "efeitos": ["desmembramento"],
+        "chance_efeito": 0.35,
+        "craft_resultado": false,
+        "raridade": "incomum"
+      },
+      {
+        "id": "lanca_improvisada",
+        "nome": "Lança Improvisada",
+        "descricao": "Cabo de vassoura com faca amarrada na ponta. Mantém distância.",
+        "dano": { "min": 12, "max": 20 },
+        "durabilidade": 25,
+        "peso": 1.5,
+        "partes_alvo": ["cabeca", "tronco", "abdomen"],
+        "efeitos": ["sangramento"],
+        "chance_efeito": 0.15,
+        "alcance": "medio",
+        "craft_resultado": true,
+        "receita": ["cabo_vassoura", "faca_enferrujada", "arame"],
+        "raridade": "comum"
+      }
+    ],
+    "impacto": [
+      {
+        "id": "cano_enferrujado",
+        "nome": "Cano Enferrujado",
+        "descricao": "Um pedaço de cano ferrugento. Não corta, mas machuca.",
+        "dano": { "min": 6, "max": 12 },
+        "durabilidade": 50,
+        "peso": 1.2,
+        "partes_alvo": ["cabeca", "tronco", "membros", "antenas", "patas"],
+        "efeitos": ["atordoamento"],
+        "chance_efeito": 0.25,
+        "craft_resultado": false,
+        "raridade": "comum"
+      },
+      {
+        "id": "marreta",
+        "nome": "Marreta",
+        "descricao": "Ferramenta de construção. Ideal para armadura quitinosa.",
+        "dano": { "min": 28, "max": 40 },
+        "durabilidade": 80,
+        "peso": 4.0,
+        "partes_alvo": ["cabeca", "tronco", "membros"],
+        "efeitos": ["atordoamento", "fratura"],
+        "chance_efeito": 0.45,
+        "craft_resultado": false,
+        "raridade": "incomum"
+      }
+    ],
+    "fogo": [
+      {
+        "id": "espingarda_cal12",
+        "nome": "Espingarda Cal.12",
+        "descricao": "Arma de caça. Munição rara. Cada tiro conta.",
+        "dano": { "min": 45, "max": 70 },
+        "durabilidade": 100,
+        "peso": 3.5,
+        "municao": "cartucho_cal12",
+        "capacidade": 2,
+        "partes_alvo": ["cabeca", "tronco", "abdomen", "membros"],
+        "efeitos": ["sangramento_grave", "desmembramento"],
+        "chance_efeito": 0.6,
+        "craft_resultado": false,
+        "raridade": "raro"
+      },
+      {
+        "id": "pistola_9mm",
+        "nome": "Pistola 9mm",
+        "descricao": "Arma de serviço. Menos dano que espingarda, mais precisão.",
+        "dano": { "min": 25, "max": 38 },
+        "durabilidade": 90,
+        "peso": 0.9,
+        "municao": "bala_9mm",
+        "capacidade": 15,
+        "partes_alvo": ["cabeca", "tronco", "abdomen", "olhos"],
+        "efeitos": ["sangramento"],
+        "chance_efeito": 0.3,
+        "craft_resultado": false,
+        "raridade": "raro"
+      }
+    ],
+    "arremesso": [
+      {
+        "id": "molotov",
+        "nome": "Coquetel Molotov",
+        "descricao": "Garrafa com combustível. Insetos odeiam fogo.",
+        "dano": { "min": 20, "max": 30 },
+        "dano_por_turno": 8,
+        "turnos_fogo": 3,
+        "quantidade": 1,
+        "peso": 0.6,
+        "efeitos": ["fogo", "panico"],
+        "chance_efeito": 1.0,
+        "craft_resultado": true,
+        "receita": ["garrafa_vazia", "combustivel", "pano"],
+        "raridade": "comum"
+      },
+      {
+        "id": "pedra",
+        "nome": "Pedra",
+        "descricao": "Pode distrair inimigos ou quebrar antenas.",
+        "dano": { "min": 3, "max": 8 },
+        "quantidade": 5,
+        "peso": 0.3,
+        "partes_alvo": ["cabeca", "antenas", "olhos"],
+        "efeitos": ["distração"],
+        "chance_efeito": 0.5,
+        "craft_resultado": false,
+        "raridade": "comum"
+      }
+    ],
+    "armadilhas": [
+      {
+        "id": "armadilha_arame",
+        "nome": "Armadilha de Arame",
+        "descricao": "Esticada no chão, prende patas de insetos menores.",
+        "dano": { "min": 5, "max": 10 },
+        "efeitos": ["imobilizacao"],
+        "chance_efeito": 0.7,
+        "durabilidade": 1,
+        "craft_resultado": true,
+        "receita": ["arame", "estaca_madeira"],
+        "raridade": "comum"
+      },
+      {
+        "id": "armadilha_fogo",
+        "nome": "Armadilha de Fogo",
+        "descricao": "Recipiente com combustível. Explode ao contato.",
+        "dano": { "min": 30, "max": 50 },
+        "efeitos": ["fogo", "atordoamento"],
+        "chance_efeito": 0.9,
+        "durabilidade": 1,
+        "craft_resultado": true,
+        "receita": ["lata_vazia", "combustivel", "isqueiro"],
+        "raridade": "incomum"
+      }
+    ]
+  },
+
+  "armaduras": {
+    "cabeca": [
+      {
+        "id": "capacete_construcao",
+        "nome": "Capacete de Construção",
+        "descricao": "Plástico resistente. Protege impactos, não mordidas.",
+        "defesa": 8,
+        "penalidade_percepcao": -1,
+        "durabilidade": 40,
+        "peso": 0.8,
+        "craft_resultado": false,
+        "raridade": "comum"
+      },
+      {
+        "id": "mascara_gas",
+        "nome": "Máscara de Gás",
+        "descricao": "Protege contra veneno e esporos do fungo.",
+        "defesa": 4,
+        "resistencias": ["veneno", "esporo", "gas"],
+        "durabilidade": 60,
+        "peso": 1.2,
+        "craft_resultado": false,
+        "raridade": "incomum"
+      }
+    ],
+    "tronco": [
+      {
+        "id": "jaqueta_couro",
+        "nome": "Jaqueta de Couro",
+        "descricao": "Resistente a cortes superficiais. Nada contra mandíbulas.",
+        "defesa": 10,
+        "durabilidade": 70,
+        "peso": 2.0,
+        "craft_resultado": false,
+        "raridade": "comum"
+      },
+      {
+        "id": "colete_improvisado",
+        "nome": "Colete Improvisado",
+        "descricao": "Placas de metal amarradas com arame. Pesado mas funcional.",
+        "defesa": 18,
+        "penalidade_agilidade": -2,
+        "durabilidade": 90,
+        "peso": 5.0,
+        "craft_resultado": true,
+        "receita": ["placa_metal", "placa_metal", "arame", "arame"],
+        "raridade": "incomum"
+      }
+    ],
+    "bracos": [
+      {
+        "id": "luvas_trabalho",
+        "nome": "Luvas de Trabalho",
+        "descricao": "Proteção básica para as mãos.",
+        "defesa": 4,
+        "durabilidade": 35,
+        "peso": 0.3,
+        "craft_resultado": false,
+        "raridade": "comum"
+      }
+    ],
+    "pernas": [
+      {
+        "id": "calca_grossa",
+        "nome": "Calça Grossa",
+        "descricao": "Tecido reforçado. Dificulta mordidas nas pernas.",
+        "defesa": 6,
+        "durabilidade": 50,
+        "peso": 0.8,
+        "craft_resultado": false,
+        "raridade": "comum"
+      },
+      {
+        "id": "caneleiras_improvisadas",
+        "nome": "Caneleiras Improvisadas",
+        "descricao": "Revistas presas com elástico. Ridículo mas funciona.",
+        "defesa": 5,
+        "durabilidade": 20,
+        "peso": 0.4,
+        "craft_resultado": true,
+        "receita": ["revista_grossa", "revista_grossa", "elastico"],
+        "raridade": "comum"
+      }
+    ]
+  },
+
+  "consumiveis": {
+    "cura": [
+      {
+        "id": "garrafa_agua",
+        "nome": "Garrafa d'Água",
+        "descricao": "Água potável. Essencial para sobreviver.",
+        "efeito": { "vida": 15, "sanidade": 5 },
+        "peso": 0.5,
+        "raridade": "comum"
+      },
+      {
+        "id": "kit_primeiros_socorros",
+        "nome": "Kit de Primeiros Socorros",
+        "descricao": "Curativos e antisséptico. Cura ferimentos graves.",
+        "efeito": { "vida": 40 },
+        "remove_efeitos": ["sangramento", "infeccao"],
+        "peso": 0.8,
+        "raridade": "incomum"
+      },
+      {
+        "id": "antibiotico",
+        "nome": "Antibiótico",
+        "descricao": "Combate infecções causadas por ferimentos e venenos.",
+        "efeito": { "vida": 10 },
+        "remove_efeitos": ["veneno", "infeccao", "esporo"],
+        "peso": 0.1,
+        "raridade": "raro"
+      }
+    ],
+    "sanidade": [
+      {
+        "id": "cigarro",
+        "nome": "Cigarro",
+        "descricao": "Acalma os nervos. Por enquanto.",
+        "efeito": { "sanidade": 15 },
+        "peso": 0.05,
+        "raridade": "comum"
+      },
+      {
+        "id": "calmante",
+        "nome": "Calmante",
+        "descricao": "Medicamento ansiolítico. Restaura sanidade mas reduz percepção.",
+        "efeito": { "sanidade": 35, "percepcao": -2 },
+        "duracao_turnos": 5,
+        "peso": 0.05,
+        "raridade": "incomum"
+      }
+    ],
+    "buffs": [
+      {
+        "id": "adrenalina",
+        "nome": "Adrenalina",
+        "descricao": "Injetável. Aumenta força e agilidade temporariamente.",
+        "efeito": { "forca": 3, "agilidade": 3 },
+        "duracao_turnos": 4,
+        "efeito_pos": { "forca": -1, "agilidade": -1 },
+        "duracao_pos_turnos": 3,
+        "peso": 0.1,
+        "raridade": "raro"
+      }
+    ],
+    "municao": [
+      {
+        "id": "cartucho_cal12",
+        "nome": "Cartucho Cal.12",
+        "descricao": "Munição para espingarda. Rara e valiosa.",
+        "quantidade_pilha": 10,
+        "peso": 0.05,
+        "raridade": "raro"
+      },
+      {
+        "id": "bala_9mm",
+        "nome": "Bala 9mm",
+        "descricao": "Munição para pistola.",
+        "quantidade_pilha": 30,
+        "peso": 0.02,
+        "raridade": "incomum"
+      }
+    ]
+  },
+
+  "materiais": [
+    { "id": "arame", "nome": "Arame", "descricao": "Fio de metal. Serve para amarrar e prender.", "peso": 0.2, "raridade": "comum" },
+    { "id": "pano", "nome": "Pano", "descricao": "Tecido rasgado. Curativo improvisado ou pavio.", "peso": 0.1, "raridade": "comum" },
+    { "id": "combustivel", "nome": "Combustível", "descricao": "Gasolina ou álcool. Inflamável.", "peso": 0.5, "raridade": "comum" },
+    { "id": "placa_metal", "nome": "Placa de Metal", "descricao": "Chapa metálica. Base para armadura improvisada.", "peso": 2.0, "raridade": "incomum" },
+    { "id": "cabo_vassoura", "nome": "Cabo de Vassoura", "descricao": "Madeira resistente. Serve como cabo de arma.", "peso": 0.8, "raridade": "comum" },
+    { "id": "garrafa_vazia", "nome": "Garrafa Vazia", "descricao": "Vidro. Pode virar molotov ou arma de arremesso.", "peso": 0.3, "raridade": "comum" },
+    { "id": "lata_vazia", "nome": "Lata Vazia", "descricao": "Metal. Base para armadilha de fogo.", "peso": 0.2, "raridade": "comum" },
+    { "id": "estaca_madeira", "nome": "Estaca de Madeira", "descricao": "Madeira apontada. Componente de armadilha.", "peso": 0.4, "raridade": "comum" },
+    { "id": "revista_grossa", "nome": "Revista Grossa", "descricao": "Papel grosso enrolado. Proteção improvisada.", "peso": 0.2, "raridade": "comum" },
+    { "id": "elastico", "nome": "Elástico", "descricao": "Para prender improvisações.", "peso": 0.01, "raridade": "comum" },
+    { "id": "isqueiro", "nome": "Isqueiro", "descricao": "Fonte de fogo. Componente essencial.", "peso": 0.05, "raridade": "comum" },
+    { "id": "quitina_barata", "nome": "Quitina de Barata", "descricao": "Fragmento do exoesqueleto. Poderia virar armadura.", "peso": 0.5, "raridade": "incomum" },
+    { "id": "veneno_tocandira", "nome": "Veneno de Tocandira", "descricao": "Extraído com cuidado. Pode ser aplicado em armas.", "peso": 0.1, "raridade": "raro" }
+  ],
+
+  "efeitos_status": {
+    "sangramento": { "dano_por_turno": 5, "cura": ["pano", "kit_primeiros_socorros"] },
+    "sangramento_grave": { "dano_por_turno": 12, "cura": ["kit_primeiros_socorros"] },
+    "veneno": { "dano_por_turno": 8, "turnos": 4, "cura": ["antibiotico"] },
+    "fogo": { "dano_por_turno": 10, "turnos": 3, "cura": [] },
+    "atordoamento": { "pula_turno": true, "turnos": 1 },
+    "imobilizacao": { "impede_fuga": true, "turnos": 2 },
+    "infeccao": { "dano_por_turno": 3, "turnos": 6, "cura": ["antibiotico"] },
+    "esporo": { "sanidade_por_turno": -5, "turnos": 4, "cura": ["antibiotico", "mascara_gas"] },
+    "panico": { "chance_fuga_forcada": 0.5, "turnos": 2 },
+    "distração": { "inimigo_ignora_jogador": true, "turnos": 1 },
+    "fratura": { "penalidade_dano": -5, "turnos": 999 }
+  }
+}
