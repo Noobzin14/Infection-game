@@ -3,12 +3,143 @@
   "titulo": "Despertar",
   "cenas": [
     {
+      "id": "criacao_01",
+      "background": "bunker_escuro",
+      "personagem": null,
+      "texto": "Escuridão.\n\nSeus pulmões puxam ar pesado, abafado. Cheira a metal e terra molhada.\n\nVocê está vivo. Por enquanto.\n\nSeus braços doem. Você tenta se lembrar — antes de tudo isso, como era seu corpo?",
+      "tipo": "criacao",
+      "atributo_base": true,
+      "escolhas": [
+        {
+          "texto": "Trabalhava com as mãos. Construção, campo.",
+          "proxima": "criacao_02",
+          "efeito": {
+            "atributos": {
+              "forca": 7,
+              "resistencia": 6,
+              "agilidade": 4,
+              "percepcao": 4,
+              "mente": 4
+            }
+          }
+        },
+        {
+          "texto": "Trabalho de escritório. Sedentário.",
+          "proxima": "criacao_02",
+          "efeito": {
+            "atributos": {
+              "forca": 4,
+              "resistencia": 4,
+              "agilidade": 4,
+              "percepcao": 6,
+              "mente": 7
+            }
+          }
+        },
+        {
+          "texto": "Me exercitava. Corria, academia.",
+          "proxima": "criacao_02",
+          "efeito": {
+            "atributos": {
+              "forca": 5,
+              "resistencia": 7,
+              "agilidade": 7,
+              "percepcao": 4,
+              "mente": 4
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "criacao_02",
+      "background": "bunker_escuro",
+      "personagem": null,
+      "texto": "Um barulho vem de fora. Pesado. Rítmico.\n\nSeu corpo reage antes da sua mente processar.\n\nSeu instinto imediato é...",
+      "tipo": "criacao",
+      "escolhas": [
+        {
+          "texto": "Me mover rápido. Sair da linha de perigo.",
+          "proxima": "criacao_03",
+          "efeito": {
+            "modificadores": {
+              "agilidade": 2,
+              "percepcao": 1
+            }
+          }
+        },
+        {
+          "texto": "Ficar quieto. Observar antes de agir.",
+          "proxima": "criacao_03",
+          "efeito": {
+            "modificadores": {
+              "percepcao": 3,
+              "mente": 1
+            }
+          }
+        },
+        {
+          "texto": "Pegar o que tiver na mão e me preparar.",
+          "proxima": "criacao_03",
+          "efeito": {
+            "modificadores": {
+              "forca": 2,
+              "resistencia": 1
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "criacao_03",
+      "background": "bunker_escuro",
+      "personagem": null,
+      "texto": "O barulho some.\n\nVocê prende a respiração por mais alguns segundos.\n\nSilêncio.\n\nVocê tenta se lembrar de como chegou aqui. As memórias são...",
+      "tipo": "criacao",
+      "escolhas": [
+        {
+          "texto": "Claras. Lembro de tudo — a fuga, o bunker, o cheiro.",
+          "proxima": "intro_01",
+          "efeito": {
+            "modificadores": {
+              "mente": 3
+            },
+            "traco": "memoria_intacta",
+            "sanidade": -10
+          }
+        },
+        {
+          "texto": "Fragmentadas. Flashes de luz, gritos, correria.",
+          "proxima": "intro_01",
+          "efeito": {
+            "modificadores": {
+              "mente": 1,
+              "percepcao": 1
+            }
+          }
+        },
+        {
+          "texto": "Um vazio completo. Nada antes desse momento.",
+          "proxima": "intro_01",
+          "efeito": {
+            "modificadores": {
+              "mente": -2
+            },
+            "traco": "instinto_puro"
+          }
+        }
+      ]
+    },
+    {
       "id": "intro_01",
       "background": "bunker_escuro",
       "personagem": null,
       "texto": "...\n\nVocê acorda com dor de cabeça. O ar é pesado, abafado. Cheira a metal enferrujado e terra molhada.",
       "escolhas": [
-        { "texto": "Tentar se levantar", "proxima": "intro_02" }
+        {
+          "texto": "Tentar se levantar",
+          "proxima": "intro_02"
+        }
       ]
     },
     {
@@ -17,8 +148,17 @@
       "personagem": null,
       "texto": "Seus olhos se ajustam à escuridão. Você está numa espécie de bunker improvisado — paredes de concreto, uma lanterna pendurada piscando. Do lado de fora, silêncio.\n\nNão, espera. Não é silêncio. É um som rítmico, pesado. Como passos. Grandes demais para ser humano.",
       "escolhas": [
-        { "texto": "Ficar quieto e esperar", "proxima": "intro_03a", "efeito": { "sanidade": -5 } },
-        { "texto": "Procurar uma arma", "proxima": "intro_03b" }
+        {
+          "texto": "Ficar quieto e esperar",
+          "proxima": "intro_03a",
+          "efeito": {
+            "sanidade": -5
+          }
+        },
+        {
+          "texto": "Procurar uma arma",
+          "proxima": "intro_03b"
+        }
       ]
     },
     {
@@ -27,7 +167,10 @@
       "personagem": null,
       "texto": "Você prende a respiração. Os passos diminuem. Passam.\n\nO coração ainda dispara no seu peito. Seja lá o que foi, era grande. Grande demais.",
       "escolhas": [
-        { "texto": "Explorar o bunker", "proxima": "exploracao_01" }
+        {
+          "texto": "Explorar o bunker",
+          "proxima": "exploracao_01"
+        }
       ]
     },
     {
@@ -36,7 +179,13 @@
       "personagem": null,
       "texto": "Você vasculha o chão às cegas. Seus dedos encontram algo frio — um pedaço de cano ferrugento. Não é muito, mas é melhor do que nada.\n\nOs passos somem na distância.",
       "escolhas": [
-        { "texto": "Explorar o bunker", "proxima": "exploracao_01", "efeito": { "inventario": "Cano enferrujado" } }
+        {
+          "texto": "Explorar o bunker",
+          "proxima": "exploracao_01",
+          "efeito": {
+            "inventario": "Cano enferrujado"
+          }
+        }
       ]
     },
     {
@@ -45,9 +194,21 @@
       "personagem": null,
       "texto": "Com a luz fraca da lanterna, você examina o ambiente. Há uma mochila rasgada num canto, uma porta de metal fechada com tranca por dentro, e um rádio quebrado na bancada.\n\nNuma parede, alguém escreveu com o que parece ser sangue seco:\n\n'NÃO ABRA A PORTA DE DIA'",
       "escolhas": [
-        { "texto": "Examinar a mochila", "proxima": "item_mochila" },
-        { "texto": "Tentar consertar o rádio", "proxima": "radio_check" },
-        { "texto": "Olhar pela fresta da porta", "proxima": "porta_fresta", "efeito": { "sanidade": -10 } }
+        {
+          "texto": "Examinar a mochila",
+          "proxima": "item_mochila"
+        },
+        {
+          "texto": "Tentar consertar o rádio",
+          "proxima": "radio_check"
+        },
+        {
+          "texto": "Olhar pela fresta da porta",
+          "proxima": "porta_fresta",
+          "efeito": {
+            "sanidade": -10
+          }
+        }
       ]
     },
     {
@@ -56,7 +217,17 @@
       "personagem": null,
       "texto": "Dentro da mochila: uma garrafa d'água pela metade, um isqueiro e uma faca de cozinha enferrujada.\n\nNada que vá te salvar. Mas algo.",
       "escolhas": [
-        { "texto": "Pegar tudo e continuar explorando", "proxima": "exploracao_01", "efeito": { "inventario": ["Garrafa d'água", "Isqueiro", "Faca enferrujada"] } }
+        {
+          "texto": "Pegar tudo e continuar explorando",
+          "proxima": "exploracao_01",
+          "efeito": {
+            "inventario": [
+              "Garrafa d'água",
+              "Isqueiro",
+              "Faca enferrujada"
+            ]
+          }
+        }
       ]
     },
     {
@@ -65,7 +236,10 @@
       "personagem": null,
       "texto": "Você se aproxima da porta e olha pela fresta.\n\nAmazônia. Reconhece as árvores — ou o que restou delas. Mas algo está errado. No meio da vegetação destruída, há uma estrutura escura, enorme, imóvel.\n\nEla se move.\n\nUm olho composto do tamanho de uma bola de futebol te encarando de volta.",
       "escolhas": [
-        { "texto": "Recuar imediatamente", "proxima": "exploracao_01" }
+        {
+          "texto": "Recuar imediatamente",
+          "proxima": "exploracao_01"
+        }
       ]
     }
   ]

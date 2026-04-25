@@ -4,6 +4,17 @@ let cenaAtual = null;
 let statusVida = 100;
 let statusSanidade = 100;
 let inventario = [];
+let configuracaoPersonagem = {};
+let personagem = {
+  atributos: {
+    forca: 5,
+    resistencia: 5,
+    agilidade: 5,
+    percepcao: 5,
+    mente: 5
+  },
+  tracos: []
+};
 const historicoSessao = [];
 const velocidadeTexto = 30;
 
@@ -46,6 +57,24 @@ function atualizarStatus() {
   elementos.statusInventario.textContent = `Inventário: ${inventario.length}/5`;
 }
 
+function limitarAtributo(valor) {
+  return Math.max(1, Math.min(10, valor));
+}
+
+function recalcularStatusMaximos() {
+  const formulas = configuracaoPersonagem.formulas || {};
+  const hpBase = typeof formulas.hp_base === 'number' ? formulas.hp_base : 50;
+  const hpPorResistencia = typeof formulas.hp_por_resistencia === 'number' ? formulas.hp_por_resistencia : 10;
+  const sanidadeBase = typeof formulas.sanidade_base === 'number' ? formulas.sanidade_base : 50;
+  const sanidadePorMente = typeof formulas.sanidade_por_mente === 'number' ? formulas.sanidade_por_mente : 10;
+
+  const hpMaximo = hpBase + (personagem.atributos.resistencia * hpPorResistencia);
+  const sanidadeMaxima = sanidadeBase + (personagem.atributos.mente * sanidadePorMente);
+
+  statusVida = Math.max(0, Math.min(hpMaximo, statusVida));
+  statusSanidade = Math.max(0, Math.min(sanidadeMaxima, statusSanidade));
+}
+
 function registrarHistorico(mensagem) {
   const registro = `[${new Date().toLocaleTimeString('pt-BR')}] ${mensagem}`;
   historicoSessao.push(registro);
@@ -56,12 +85,37 @@ function registrarHistorico(mensagem) {
 }
 
 function aplicarEfeitos(efeito = {}) {
+  if (efeito.atributos && typeof efeito.atributos === 'object') {
+    Object.entries(efeito.atributos).forEach(([atributo, valor]) => {
+      if (typeof valor === 'number' && Object.hasOwn(personagem.atributos, atributo)) {
+        personagem.atributos[atributo] = limitarAtributo(valor);
+      }
+    });
+    registrarHistorico('Atributos base definidos na criação.');
+  }
+
+  if (efeito.modificadores && typeof efeito.modificadores === 'object') {
+    Object.entries(efeito.modificadores).forEach(([atributo, valor]) => {
+      if (typeof valor === 'number' && Object.hasOwn(personagem.atributos, atributo)) {
+        personagem.atributos[atributo] = limitarAtributo(personagem.atributos[atributo] + valor);
+      }
+    });
+    registrarHistorico('Atributos modificados por escolha.');
+  }
+
+  if (typeof efeito.traco === 'string' && efeito.traco.trim()) {
+    if (!personagem.tracos.includes(efeito.traco)) {
+      personagem.tracos.push(efeito.traco);
+      registrarHistorico(`Novo traço: ${efeito.traco}`);
+    }
+  }
+
   if (typeof efeito.vida === 'number') {
-    statusVida = Math.max(0, Math.min(100, statusVida + efeito.vida));
+    statusVida = Math.max(0, statusVida + efeito.vida);
   }
 
   if (typeof efeito.sanidade === 'number') {
-    statusSanidade = Math.max(0, Math.min(100, statusSanidade + efeito.sanidade));
+    statusSanidade = Math.max(0, statusSanidade + efeito.sanidade);
   }
 
   if (efeito.inventario) {
@@ -76,6 +130,7 @@ function aplicarEfeitos(efeito = {}) {
     }
   }
 
+  recalcularStatusMaximos();
   atualizarStatus();
   return true;
 }
@@ -217,6 +272,22 @@ async function carregarCapitulo() {
   }
 }
 
+async function carregarConfiguracaoPersonagem() {
+  try {
+    const resposta = await fetch('data/character.json');
+    if (!resposta.ok) {
+      throw new Error(`Falha HTTP ${resposta.status}`);
+    }
+    configuracaoPersonagem = await resposta.json();
+  } catch (erro) {
+    configuracaoPersonagem = {};
+    registrarHistorico(`Aviso: character.json indisponível (${erro.message}).`);
+  } finally {
+    recalcularStatusMaximos();
+    atualizarStatus();
+  }
+}
+
 function validarNome(nome) {
   return nome.trim().length > 0;
 }
@@ -236,6 +307,7 @@ elementos.btnConfirmar.addEventListener('click', async () => {
 
   elementos.erroNome.textContent = '';
   nomeJogador = nomeDigitado;
+  await carregarConfiguracaoPersonagem();
   await carregarCapitulo();
 });
 
