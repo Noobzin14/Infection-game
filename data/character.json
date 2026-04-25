@@ -1,0 +1,134 @@
+{
+  "_instrucoes": "Cole estas cenas no início do array 'cenas' do chapter1.json, ANTES da cena intro_01. A cena criacao_01 deve ser a primeira cena carregada pelo game.js (alterar cenaInicial de 'intro_01' para 'criacao_01').",
+  "cenas_novas": [
+    {
+      "id": "criacao_01",
+      "background": "bunker_escuro",
+      "personagem": null,
+      "texto": "Escuridão.\n\nSeus pulmões puxam ar pesado, abafado. Cheira a metal e terra molhada.\n\nVocê está vivo. Por enquanto.\n\nSeus braços doem. Você tenta se lembrar — antes de tudo isso, como era seu corpo?",
+      "tipo": "criacao",
+      "atributo_base": true,
+      "escolhas": [
+        {
+          "texto": "Trabalhava com as mãos. Construção, campo.",
+          "proxima": "criacao_02",
+          "efeito": {
+            "atributos": {
+              "forca": 7,
+              "resistencia": 6,
+              "agilidade": 4,
+              "percepcao": 4,
+              "mente": 4
+            }
+          }
+        },
+        {
+          "texto": "Trabalho de escritório. Sedentário.",
+          "proxima": "criacao_02",
+          "efeito": {
+            "atributos": {
+              "forca": 4,
+              "resistencia": 4,
+              "agilidade": 4,
+              "percepcao": 6,
+              "mente": 7
+            }
+          }
+        },
+        {
+          "texto": "Me exercitava. Corria, academia.",
+          "proxima": "criacao_02",
+          "efeito": {
+            "atributos": {
+              "forca": 5,
+              "resistencia": 7,
+              "agilidade": 7,
+              "percepcao": 4,
+              "mente": 4
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "criacao_02",
+      "background": "bunker_escuro",
+      "personagem": null,
+      "texto": "Um barulho vem de fora. Pesado. Rítmico.\n\nSeu corpo reage antes da sua mente processar.\n\nSeu instinto imediato é...",
+      "tipo": "criacao",
+      "escolhas": [
+        {
+          "texto": "Me mover rápido. Sair da linha de perigo.",
+          "proxima": "criacao_03",
+          "efeito": {
+            "modificadores": {
+              "agilidade": 2,
+              "percepcao": 1
+            }
+          }
+        },
+        {
+          "texto": "Ficar quieto. Observar antes de agir.",
+          "proxima": "criacao_03",
+          "efeito": {
+            "modificadores": {
+              "percepcao": 3,
+              "mente": 1
+            }
+          }
+        },
+        {
+          "texto": "Pegar o que tiver na mão e me preparar.",
+          "proxima": "criacao_03",
+          "efeito": {
+            "modificadores": {
+              "forca": 2,
+              "resistencia": 1
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "criacao_03",
+      "background": "bunker_escuro",
+      "personagem": null,
+      "texto": "O barulho some.\n\nVocê prende a respiração por mais alguns segundos.\n\nSilêncio.\n\nVocê tenta se lembrar de como chegou aqui. As memórias são...",
+      "tipo": "criacao",
+      "escolhas": [
+        {
+          "texto": "Claras. Lembro de tudo — a fuga, o bunker, o cheiro.",
+          "proxima": "intro_01",
+          "efeito": {
+            "modificadores": {
+              "mente": 3
+            },
+            "traco": "memoria_intacta",
+            "sanidade": -10
+          }
+        },
+        {
+          "texto": "Fragmentadas. Flashes de luz, gritos, correria.",
+          "proxima": "intro_01",
+          "efeito": {
+            "modificadores": {
+              "mente": 1,
+              "percepcao": 1
+            }
+          }
+        },
+        {
+          "texto": "Um vazio completo. Nada antes desse momento.",
+          "proxima": "intro_01",
+          "efeito": {
+            "modificadores": {
+              "mente": -2
+            },
+            "traco": "instinto_puro"
+          }
+        }
+      ]
+    }
+  ],
+  "_nota_game_js": "O game.js precisa ser atualizado para: 1) Iniciar em 'criacao_01' em vez de 'intro_01'. 2) Processar o campo 'efeito.atributos' para definir atributos base. 3) Processar o campo 'efeito.modificadores' para somar aos atributos. 4) Processar o campo 'efeito.traco' para adicionar traço ao personagem. 5) Recalcular hp_maximo e sanidade_maxima após criacao_03 usando as fórmulas do character.json."
+}
