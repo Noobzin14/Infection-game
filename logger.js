@@ -139,6 +139,10 @@ function exibirConsole(entrada) {
 // ─── ENVIO PARA GITHUB ACTIONS ───────────────────────────────────────────────
 
 async function enviarParaActions(entrada) {
+  // Temporariamente desativado: será reativado quando o repositório for público
+  // ou quando o proxy via GitHub Actions estiver configurado.
+  return;
+
   try {
     // Usa o GitHub Issues API para registrar erros de produção
     // O token é público apenas para criar issues — seguro para uso no frontend
