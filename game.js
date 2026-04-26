@@ -5,16 +5,14 @@ let statusVida = 100;
 let statusSanidade = 100;
 let inventario = [];
 let configuracaoPersonagem = {};
-let personagem = {
-  atributos: {
-    forca: 5,
-    resistencia: 5,
-    agilidade: 5,
-    percepcao: 5,
-    mente: 5
-  },
-  tracos: []
+let atributos = {
+  forca: 5,
+  resistencia: 5,
+  agilidade: 5,
+  percepcao: 5,
+  mente: 5
 };
+let tracos = [];
 const historicoSessao = [];
 const velocidadeTexto = 30;
 
@@ -54,7 +52,8 @@ function alternarTela(telaAtiva) {
 function atualizarStatus() {
   elementos.statusVida.textContent = `Vida: ${statusVida}`;
   elementos.statusSanidade.textContent = `Sanidade: ${statusSanidade}`;
-  elementos.statusInventario.textContent = `Inventário: ${inventario.length}/5`;
+  elementos.statusInventario.textContent =
+    `Atributos — FOR ${atributos.forca} | AGI ${atributos.agilidade} | RES ${atributos.resistencia} | PER ${atributos.percepcao} | MEN ${atributos.mente} | Inventário: ${inventario.length}/5`;
 }
 
 function limitarAtributo(valor) {
@@ -68,8 +67,8 @@ function recalcularStatusMaximos() {
   const sanidadeBase = typeof formulas.sanidade_base === 'number' ? formulas.sanidade_base : 50;
   const sanidadePorMente = typeof formulas.sanidade_por_mente === 'number' ? formulas.sanidade_por_mente : 10;
 
-  const hpMaximo = hpBase + (personagem.atributos.resistencia * hpPorResistencia);
-  const sanidadeMaxima = sanidadeBase + (personagem.atributos.mente * sanidadePorMente);
+  const hpMaximo = hpBase + (atributos.resistencia * hpPorResistencia);
+  const sanidadeMaxima = sanidadeBase + (atributos.mente * sanidadePorMente);
 
   statusVida = Math.max(0, Math.min(hpMaximo, statusVida));
   statusSanidade = Math.max(0, Math.min(sanidadeMaxima, statusSanidade));
@@ -87,8 +86,8 @@ function registrarHistorico(mensagem) {
 function aplicarEfeitos(efeito = {}) {
   if (efeito.atributos && typeof efeito.atributos === 'object') {
     Object.entries(efeito.atributos).forEach(([atributo, valor]) => {
-      if (typeof valor === 'number' && Object.hasOwn(personagem.atributos, atributo)) {
-        personagem.atributos[atributo] = limitarAtributo(valor);
+      if (typeof valor === 'number' && Object.hasOwn(atributos, atributo)) {
+        atributos[atributo] = limitarAtributo(valor);
       }
     });
     registrarHistorico('Atributos base definidos na criação.');
@@ -96,16 +95,16 @@ function aplicarEfeitos(efeito = {}) {
 
   if (efeito.modificadores && typeof efeito.modificadores === 'object') {
     Object.entries(efeito.modificadores).forEach(([atributo, valor]) => {
-      if (typeof valor === 'number' && Object.hasOwn(personagem.atributos, atributo)) {
-        personagem.atributos[atributo] = limitarAtributo(personagem.atributos[atributo] + valor);
+      if (typeof valor === 'number' && Object.hasOwn(atributos, atributo)) {
+        atributos[atributo] = limitarAtributo(atributos[atributo] + valor);
       }
     });
     registrarHistorico('Atributos modificados por escolha.');
   }
 
   if (typeof efeito.traco === 'string' && efeito.traco.trim()) {
-    if (!personagem.tracos.includes(efeito.traco)) {
-      personagem.tracos.push(efeito.traco);
+    if (!tracos.includes(efeito.traco)) {
+      tracos.push(efeito.traco);
       registrarHistorico(`Novo traço: ${efeito.traco}`);
     }
   }
@@ -225,6 +224,13 @@ function renderCena(id) {
           return;
         }
 
+        if (cenaAtual === 'criacao_03') {
+          statusVida = 80 + (atributos.resistencia * 10);
+          statusSanidade = 60 + (atributos.mente * 8);
+          registrarHistorico('Status recalculado após criação do personagem.');
+          atualizarStatus();
+        }
+
         registrarHistorico(`Escolha: ${textoEscolha || 'Sem texto'}`);
         elementos.telaJogo.style.opacity = '0';
         elementos.telaJogo.style.transition = 'opacity 0.3s ease';
@@ -257,7 +263,7 @@ async function carregarCapitulo() {
       cenas[cena.id] = cena;
     }
 
-    const primeiraCena = (dados.cenas && dados.cenas[0] && dados.cenas[0].id) || null;
+    const primeiraCena = cenas.criacao_01 ? 'criacao_01' : (dados.cenas && dados.cenas[0] && dados.cenas[0].id) || null;
     if (!primeiraCena) {
       throw new Error('Nenhuma cena encontrada no capítulo.');
     }
