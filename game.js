@@ -137,6 +137,12 @@ function aplicarEfeitos(efeito = {}) {
 function adicionarItemInventario(item) {
   if (inventario.length >= 5) {
     elementos.textoDialogo.textContent = 'Inventário cheio. Libere espaço antes de avançar.';
+    Logger.warn('INVENTARIO', 'Tentativa de adicionar item com inventário cheio.', {
+      item,
+      capacidade: 5,
+      ocupacaoAtual: inventario.length,
+      cena: cenaAtual
+    });
     return false;
   }
 
@@ -187,6 +193,10 @@ function renderCena(id) {
   elementos.escolhasContainer.innerHTML = '';
 
   if (!cena) {
+    Logger.error('CENA', 'Cena não encontrada para renderização.', {
+      idSolicitado: id,
+      cenasDisponiveis: Object.keys(cenas).length
+    });
     elementos.nomePersonagem.textContent = nomeJogador || 'SISTEMA';
     elementos.areaBackground.style.backgroundImage = '';
     elementos.textoDialogo.textContent = 'FIM DO CAPÍTULO';
@@ -209,6 +219,12 @@ function renderCena(id) {
   const escolhasCena = Array.isArray(cena.escolhas) ? cena.escolhas : cena.choices;
 
   mostrarTextoGradual(textoCena || '', () => {
+    Logger.info('CENA', 'Cena renderizada com sucesso.', {
+      idCena: id,
+      personagem: nomeExibicao,
+      totalEscolhas: (escolhasCena || []).length
+    });
+
     (escolhasCena || []).forEach((escolha) => {
       const textoEscolha = typeof escolha.texto === 'string' ? escolha.texto : escolha.text;
       const proximaCena = typeof escolha.proxima === 'string' ? escolha.proxima : escolha.next_scene;
@@ -273,6 +289,10 @@ async function carregarCapitulo() {
     alternarTela(elementos.telaJogo);
     renderCena(primeiraCena);
   } catch (erro) {
+    Logger.fatal('REDE', 'Falha ao carregar JSON do capítulo.', {
+      arquivo: 'story/chapter1.json',
+      erro: erro.message
+    });
     elementos.erroNome.textContent = `Erro ao carregar capítulo: ${erro.message}`;
     elementos.erroNome.style.color = '#ff2e2e';
   }

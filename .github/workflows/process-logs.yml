@@ -1,0 +1,74 @@
+name: Processar logs automáticos
+
+on:
+  issues:
+    types: [opened, edited, reopened, labeled]
+
+permissions:
+  issues: write
+
+jobs:
+  processar-log:
+    if: contains(join(github.event.issue.labels.*.name, ','), 'log-automatico')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extrair dados do log
+        id: extrair
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const corpo = issue.body || '';
+            const extrair = (regex, fallback = 'não informado') => {
+              const m = corpo.match(regex);
+              return m ? m[1].trim() : fallback;
+            };
+
+            const nivel = extrair(/\*\*Nível:\*\*\s*(.+)/i);
+            const categoria = extrair(/\*\*Categoria:\*\*\s*(.+)/i);
+            const cena = extrair(/\*\*Cena:\*\*\s*(.+)/i);
+            const ambiente = extrair(/\*\*Ambiente:\*\*\s*(.+)/i);
+
+            core.setOutput('nivel', nivel);
+            core.setOutput('categoria', categoria);
+            core.setOutput('cena', cena);
+            core.setOutput('ambiente', ambiente);
+
+      - name: Atualizar labels por severidade
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue_number = context.payload.issue.number;
+            const nivel = '${{ steps.extrair.outputs.nivel }}'.toUpperCase();
+            const labels = ['processado-log'];
+            if (nivel === 'FATAL') labels.push('prioridade-alta');
+            if (nivel === 'ERROR') labels.push('prioridade-media');
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number,
+              labels
+            });
+
+      - name: Comentar resumo do processamento
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue_number = context.payload.issue.number;
+            const resumo = [
+              '✅ Log automático processado com sucesso.',
+              '',
+              `- **Nível:** ${{ steps.extrair.outputs.nivel }}`,
+              `- **Categoria:** ${{ steps.extrair.outputs.categoria }}`,
+              `- **Cena:** ${{ steps.extrair.outputs.cena }}`,
+              `- **Ambiente:** ${{ steps.extrair.outputs.ambiente }}`,
+              '',
+              'Este comentário foi gerado pela workflow `process-logs.yml`.'
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number,
+              body: resumo
+            });
