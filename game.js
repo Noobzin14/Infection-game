@@ -70,8 +70,50 @@ function recalcularStatusMaximos() {
   const hpMaximo = hpBase + (atributos.resistencia * hpPorResistencia);
   const sanidadeMaxima = sanidadeBase + (atributos.mente * sanidadePorMente);
 
-  statusVida = Math.max(0, Math.min(hpMaximo, statusVida));
-  statusSanidade = Math.max(0, Math.min(sanidadeMaxima, statusSanidade));
+  statusVida = Math.max(0, Math.min(100, hpMaximo, statusVida));
+  statusSanidade = Math.max(0, Math.min(100, sanidadeMaxima, statusSanidade));
+}
+
+function avancarCena(escolha, textoEscolha) {
+  const podeAvancar = aplicarEfeitos(escolha.efeito);
+  if (!podeAvancar) {
+    registrarHistorico(`Escolha bloqueada por inventário cheio: ${textoEscolha || 'Sem texto'}`);
+    return;
+  }
+
+  if (cenaAtual === 'criacao_03') {
+    statusVida = Math.min(100, 80 + (atributos.resistencia * 10));
+    statusSanidade = Math.min(100, 60 + (atributos.mente * 8));
+    registrarHistorico('Status recalculado após criação do personagem.');
+    atualizarStatus();
+  }
+
+  registrarHistorico(`Escolha: ${textoEscolha || 'Sem texto'}`);
+  elementos.telaJogo.style.opacity = '0';
+  elementos.telaJogo.style.transition = 'opacity 0.3s ease';
+
+  setTimeout(() => {
+    elementos.telaJogo.style.opacity = '1';
+    renderCena(escolha.proxima || escolha.next_scene);
+  }, 300);
+}
+
+function renderEscolhas(cena) {
+  const escolhasCena = Array.isArray(cena.escolhas) ? cena.escolhas : cena.choices;
+
+  (escolhasCena || []).forEach((escolha) => {
+    const textoEscolha = typeof escolha.texto === 'string' ? escolha.texto : escolha.text;
+
+    const botao = document.createElement('button');
+    botao.className = 'botao-principal botao-escolha';
+    botao.textContent = textoEscolha || 'Continuar';
+    botao.addEventListener('click', () => avancarCena(escolha, textoEscolha));
+    elementos.escolhasContainer.appendChild(botao);
+  });
+
+  if (!escolhasCena || escolhasCena.length === 0) {
+    criarBotaoRecomecar();
+  }
 }
 
 function registrarHistorico(mensagem) {
@@ -241,7 +283,6 @@ function renderCena(id) {
   aplicarClasseBackground(cena.background);
 
   const textoCena = typeof cena.texto === 'string' ? cena.texto : cena.text;
-  const escolhasCena = Array.isArray(cena.escolhas) ? cena.escolhas : cena.choices;
 
   mostrarTextoGradual(textoCena || '', () => {
     Logger.info('CENA', 'Cena renderizada com sucesso.', {
@@ -250,44 +291,7 @@ function renderCena(id) {
       totalEscolhas: (escolhasCena || []).length
     });
 
-    (escolhasCena || []).forEach((escolha) => {
-      const textoEscolha = typeof escolha.texto === 'string' ? escolha.texto : escolha.text;
-      const proximaCena = typeof escolha.proxima === 'string' ? escolha.proxima : escolha.next_scene;
-
-      const botao = document.createElement('button');
-      botao.className = 'botao-principal botao-escolha';
-      botao.textContent = textoEscolha || 'Continuar';
-
-      botao.addEventListener('click', () => {
-        const podeAvancar = aplicarEfeitos(escolha.efeito);
-        if (!podeAvancar) {
-          registrarHistorico(`Escolha bloqueada por inventário cheio: ${textoEscolha || 'Sem texto'}`);
-          return;
-        }
-
-        if (cenaAtual === 'criacao_03') {
-          statusVida = 80 + (atributos.resistencia * 10);
-          statusSanidade = 60 + (atributos.mente * 8);
-          registrarHistorico('Status recalculado após criação do personagem.');
-          atualizarStatus();
-        }
-
-        registrarHistorico(`Escolha: ${textoEscolha || 'Sem texto'}`);
-        elementos.telaJogo.style.opacity = '0';
-        elementos.telaJogo.style.transition = 'opacity 0.3s ease';
-
-        setTimeout(() => {
-          elementos.telaJogo.style.opacity = '1';
-          renderCena(proximaCena);
-        }, 300);
-      });
-
-      elementos.escolhasContainer.appendChild(botao);
-    });
-
-    if (!escolhasCena || escolhasCena.length === 0) {
-      criarBotaoRecomecar();
-    }
+    renderEscolhas(cena);
   });
 }
 
@@ -374,36 +378,16 @@ elementos.textoDialogo.addEventListener('click', () => {
     elementos.textoDialogo.textContent = textoCompletoAtual;
 
     const cena = cenas[cenaAtual];
-    if (cena && cena.choices) {
+    if (cena) {
       elementos.escolhasContainer.innerHTML = '';
-      cena.choices.forEach((escolha) => {
-        const botao = document.createElement('button');
-        botao.className = 'botao-principal botao-escolha';
-        botao.textContent = escolha.text;
-        botao.addEventListener('click', () => {
-          const podeAvancar = aplicarEfeitos(escolha.efeito);
-          if (!podeAvancar) {
-            registrarHistorico(`Escolha bloqueada por inventário cheio: ${escolha.text}`);
-            return;
-          }
-
-          registrarHistorico(`Escolha: ${escolha.text}`);
-          elementos.telaJogo.style.opacity = '0';
-          elementos.telaJogo.style.transition = 'opacity 0.3s ease';
-          setTimeout(() => {
-            elementos.telaJogo.style.opacity = '1';
-            renderCena(escolha.next_scene);
-          }, 300);
-        });
-        elementos.escolhasContainer.appendChild(botao);
-      });
+      renderEscolhas(cena);
     }
   }
 });
 
 elementos.btnHistorico.addEventListener('click', () => {
-  elementos.painelHistorico.classList.add('aberto');
-  elementos.painelHistorico.setAttribute('aria-hidden', 'false');
+  const aberto = elementos.painelHistorico.classList.toggle('aberto');
+  elementos.painelHistorico.setAttribute('aria-hidden', aberto ? 'false' : 'true');
 });
 
 elementos.btnFecharHistorico.addEventListener('click', () => {
