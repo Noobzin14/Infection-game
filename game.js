@@ -283,6 +283,7 @@ function renderCena(id) {
   aplicarClasseBackground(cena.background);
 
   const textoCena = typeof cena.texto === 'string' ? cena.texto : cena.text;
+  const escolhasCena = Array.isArray(cena.escolhas) ? cena.escolhas : cena.choices;
 
   mostrarTextoGradual(textoCena || '', () => {
     Logger.info('CENA', 'Cena renderizada com sucesso.', {
