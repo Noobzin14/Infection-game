@@ -1,134 +1,224 @@
 {
-  "_instrucoes": "Cole estas cenas no início do array 'cenas' do chapter1.json, ANTES da cena intro_01. A cena criacao_01 deve ser a primeira cena carregada pelo game.js (alterar cenaInicial de 'intro_01' para 'criacao_01').",
-  "cenas_novas": [
+  "_instrucoes": "Define o sistema de personagem do Infection Game. Lido pelo game.js para criação, combate e diálogos. Atributos são calculados pelas respostas às perguntas narrativas. Traços são revelados pelas ações nas primeiras cenas.",
+
+  "atributos_base": {
+    "forca": {
+      "descricao": "Define dano corpo-a-corpo e capacidade de carregar peso.",
+      "minimo": 1,
+      "maximo": 10,
+      "padrao": 5,
+      "impacto": {
+        "dano_melee": "forca * 1.5",
+        "peso_maximo": "forca * 5"
+      }
+    },
+    "agilidade": {
+      "descricao": "Define chance de esquiva e velocidade de fuga.",
+      "minimo": 1,
+      "maximo": 10,
+      "padrao": 5,
+      "impacto": {
+        "chance_esquiva": "agilidade * 0.05",
+        "chance_fuga": "agilidade * 0.08"
+      }
+    },
+    "resistencia": {
+      "descricao": "Define HP máximo e resistência a veneno e doença.",
+      "minimo": 1,
+      "maximo": 10,
+      "padrao": 5,
+      "impacto": {
+        "hp_maximo": "80 + (resistencia * 10)",
+        "reducao_veneno": "resistencia * 0.03"
+      }
+    },
+    "percepcao": {
+      "descricao": "Define chance de detectar inimigos e encontrar itens escondidos.",
+      "minimo": 1,
+      "maximo": 10,
+      "padrao": 5,
+      "impacto": {
+        "chance_deteccao": "percepcao * 0.07",
+        "chance_item_escondido": "percepcao * 0.05"
+      }
+    },
+    "mente": {
+      "descricao": "Define Sanidade máxima e resistência a efeitos psicológicos.",
+      "minimo": 1,
+      "maximo": 10,
+      "padrao": 5,
+      "impacto": {
+        "sanidade_maxima": "60 + (mente * 8)",
+        "resistencia_panico": "mente * 0.04"
+      }
+    }
+  },
+
+  "perguntas_narrativas": [
     {
-      "id": "criacao_01",
-      "background": "bunker_escuro",
-      "personagem": null,
-      "texto": "Escuridão.\n\nSeus pulmões puxam ar pesado, abafado. Cheira a metal e terra molhada.\n\nVocê está vivo. Por enquanto.\n\nSeus braços doem. Você tenta se lembrar — antes de tudo isso, como era seu corpo?",
-      "tipo": "criacao",
-      "atributo_base": true,
-      "escolhas": [
+      "id": "pergunta_01",
+      "cena_id": "criacao_01",
+      "narrativa": "Seus braços doem. Você tenta se lembrar — antes de tudo isso, como era seu corpo?",
+      "opcoes": [
         {
           "texto": "Trabalhava com as mãos. Construção, campo.",
-          "proxima": "criacao_02",
-          "efeito": {
-            "atributos": {
-              "forca": 7,
-              "resistencia": 6,
-              "agilidade": 4,
-              "percepcao": 4,
-              "mente": 4
-            }
-          }
+          "atributos": { "forca": 7, "resistencia": 6, "agilidade": 4, "percepcao": 4, "mente": 4 },
+          "proxima": "criacao_02"
         },
         {
           "texto": "Trabalho de escritório. Sedentário.",
-          "proxima": "criacao_02",
-          "efeito": {
-            "atributos": {
-              "forca": 4,
-              "resistencia": 4,
-              "agilidade": 4,
-              "percepcao": 6,
-              "mente": 7
-            }
-          }
+          "atributos": { "forca": 4, "resistencia": 4, "agilidade": 4, "percepcao": 6, "mente": 7 },
+          "proxima": "criacao_02"
         },
         {
           "texto": "Me exercitava. Corria, academia.",
-          "proxima": "criacao_02",
-          "efeito": {
-            "atributos": {
-              "forca": 5,
-              "resistencia": 7,
-              "agilidade": 7,
-              "percepcao": 4,
-              "mente": 4
-            }
-          }
+          "atributos": { "forca": 5, "resistencia": 7, "agilidade": 7, "percepcao": 4, "mente": 4 },
+          "proxima": "criacao_02"
         }
       ]
     },
     {
-      "id": "criacao_02",
-      "background": "bunker_escuro",
-      "personagem": null,
-      "texto": "Um barulho vem de fora. Pesado. Rítmico.\n\nSeu corpo reage antes da sua mente processar.\n\nSeu instinto imediato é...",
-      "tipo": "criacao",
-      "escolhas": [
+      "id": "pergunta_02",
+      "cena_id": "criacao_02",
+      "narrativa": "Um barulho vem de fora. Seu instinto imediato é...",
+      "opcoes": [
         {
           "texto": "Me mover rápido. Sair da linha de perigo.",
-          "proxima": "criacao_03",
-          "efeito": {
-            "modificadores": {
-              "agilidade": 2,
-              "percepcao": 1
-            }
-          }
+          "modificadores": { "agilidade": 2, "percepcao": 1 },
+          "proxima": "criacao_03"
         },
         {
           "texto": "Ficar quieto. Observar antes de agir.",
-          "proxima": "criacao_03",
-          "efeito": {
-            "modificadores": {
-              "percepcao": 3,
-              "mente": 1
-            }
-          }
+          "modificadores": { "percepcao": 3, "mente": 1 },
+          "proxima": "criacao_03"
         },
         {
           "texto": "Pegar o que tiver na mão e me preparar.",
-          "proxima": "criacao_03",
-          "efeito": {
-            "modificadores": {
-              "forca": 2,
-              "resistencia": 1
-            }
-          }
+          "modificadores": { "forca": 2, "resistencia": 1 },
+          "proxima": "criacao_03"
         }
       ]
     },
     {
-      "id": "criacao_03",
-      "background": "bunker_escuro",
-      "personagem": null,
-      "texto": "O barulho some.\n\nVocê prende a respiração por mais alguns segundos.\n\nSilêncio.\n\nVocê tenta se lembrar de como chegou aqui. As memórias são...",
-      "tipo": "criacao",
-      "escolhas": [
+      "id": "pergunta_03",
+      "cena_id": "criacao_03",
+      "narrativa": "Você tenta se lembrar de como chegou aqui. As memórias são...",
+      "opcoes": [
         {
           "texto": "Claras. Lembro de tudo — a fuga, o bunker, o cheiro.",
-          "proxima": "intro_01",
-          "efeito": {
-            "modificadores": {
-              "mente": 3
-            },
-            "traco": "memoria_intacta",
-            "sanidade": -10
-          }
+          "modificadores": { "mente": 3 },
+          "traco_inicial": "memoria_intacta",
+          "proxima": "intro_01"
         },
         {
           "texto": "Fragmentadas. Flashes de luz, gritos, correria.",
-          "proxima": "intro_01",
-          "efeito": {
-            "modificadores": {
-              "mente": 1,
-              "percepcao": 1
-            }
-          }
+          "modificadores": { "mente": 1, "percepcao": 1 },
+          "traco_inicial": null,
+          "proxima": "intro_01"
         },
         {
           "texto": "Um vazio completo. Nada antes desse momento.",
-          "proxima": "intro_01",
-          "efeito": {
-            "modificadores": {
-              "mente": -2
-            },
-            "traco": "instinto_puro"
-          }
+          "modificadores": { "mente": -2 },
+          "traco_inicial": "instinto_puro",
+          "proxima": "intro_01"
         }
       ]
     }
   ],
-  "_nota_game_js": "O game.js precisa ser atualizado para: 1) Iniciar em 'criacao_01' em vez de 'intro_01'. 2) Processar o campo 'efeito.atributos' para definir atributos base. 3) Processar o campo 'efeito.modificadores' para somar aos atributos. 4) Processar o campo 'efeito.traco' para adicionar traço ao personagem. 5) Recalcular hp_maximo e sanidade_maxima após criacao_03 usando as fórmulas do character.json."
+
+  "tracos": {
+    "positivos": {
+      "paciente": {
+        "nome": "Paciente",
+        "descricao": "Sabe esperar o momento certo.",
+        "como_revelar": "Escolheu ficar quieto em intro_03a",
+        "efeito": { "chance_esquiva": 0.10 }
+      },
+      "combativo": {
+        "nome": "Combativo",
+        "descricao": "Reage com instinto agressivo.",
+        "como_revelar": "Procurou arma em intro_03b",
+        "efeito": { "dano_base": 1 }
+      },
+      "curioso": {
+        "nome": "Curioso",
+        "descricao": "Observa detalhes que outros ignoram.",
+        "como_revelar": "Olhou pela fresta em porta_fresta",
+        "efeito": { "percepcao": 1 },
+        "custo": { "sanidade_inicial": -5 }
+      },
+      "pragmatico": {
+        "nome": "Pragmático",
+        "descricao": "Prioriza o útil sobre o emocional.",
+        "como_revelar": "Examinou a mochila antes de qualquer outra ação",
+        "efeito": { "peso_maximo": 2 }
+      },
+      "comunicativo": {
+        "nome": "Comunicativo",
+        "descricao": "Sabe como falar com pessoas em situações extremas.",
+        "como_revelar": "Tentou o rádio primeiro em exploracao_01",
+        "efeito": { "relacao_npcs": 1 }
+      },
+      "memoria_intacta": {
+        "nome": "Memória Intacta",
+        "descricao": "Lembra de tudo. Inclusive do que preferia esquecer.",
+        "como_revelar": "Resposta 'Claras' na pergunta_03",
+        "efeito": { "mente": 1, "sanidade_inicial": -10 }
+      },
+      "instinto_puro": {
+        "nome": "Instinto Puro",
+        "descricao": "Sem memória, sem medo. Age por instinto.",
+        "como_revelar": "Resposta 'Vazio completo' na pergunta_03",
+        "efeito": { "chance_esquiva": 0.05, "dano_base": 1 },
+        "custo": { "mente": -2 }
+      }
+    },
+    "negativos": {
+      "fobia_insetos": {
+        "nome": "Fobia de Insetos",
+        "descricao": "A visão de insetos gigantes drena a sanidade.",
+        "como_revelar": "Perdeu 20+ de sanidade nas primeiras cenas",
+        "efeito": { "sanidade_por_encontro": -8 }
+      },
+      "trauma": {
+        "nome": "Traumatizado",
+        "descricao": "Algo quebrou dentro. Difícil de consertar.",
+        "como_revelar": "Sanidade abaixo de 40 antes de sair do bunker",
+        "efeito": { "mente": -1, "sanidade_maxima": -10 }
+      }
+    }
+  },
+
+  "personalidade": {
+    "descricao": "Calculada pela soma das escolhas nas primeiras 10 cenas.",
+    "tipos": {
+      "pragmatico": {
+        "nome": "Pragmático",
+        "descricao": "Toma decisões baseadas em sobrevivência, não em emoção.",
+        "threshold": "maioria de escolhas práticas/agressivas",
+        "efeito_dialogos": "Opções diretas e eficientes desbloqueadas"
+      },
+      "empatico": {
+        "nome": "Empático",
+        "descricao": "Considera o impacto das ações nos outros.",
+        "threshold": "maioria de escolhas cuidadosas/solidárias",
+        "efeito_dialogos": "Opções de negociação e aliança desbloqueadas"
+      },
+      "instavel": {
+        "nome": "Instável",
+        "descricao": "Imprevisível. Pode surpreender amigos e inimigos.",
+        "threshold": "Sanidade abaixo de 50 por tempo prolongado",
+        "efeito_dialogos": "Opções caóticas desbloqueadas — alto risco, alta recompensa"
+      }
+    }
+  },
+
+  "formulas_combate": {
+    "dano_melee": "forca * 1.5 + arma.dano_base + (traco_combativo ? 1 : 0)",
+    "chance_acerto": "0.7 + (agilidade * 0.02)",
+    "chance_esquiva": "agilidade * 0.05 + (traco_paciente ? 0.10 : 0)",
+    "hp_maximo": "80 + (resistencia * 10)",
+    "sanidade_maxima": "60 + (mente * 8) - (traco_trauma ? 10 : 0)",
+    "chance_fuga": "agilidade * 0.08 + (velocidade_inimigo < agilidade ? 0.2 : -0.2)"
+  }
 }
