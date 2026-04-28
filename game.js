@@ -178,6 +178,36 @@ function mostrarTextoGradual(texto, aoFinal) {
   }, velocidadeTexto);
 }
 
+
+function limparClassesBackground() {
+  const classesBackground = Array.from(elementos.areaBackground.classList)
+    .filter((classe) => classe.startsWith('bg-'));
+
+  classesBackground.forEach((classe) => {
+    elementos.areaBackground.classList.remove(classe);
+  });
+}
+
+function aplicarClasseBackground(backgroundCena) {
+  limparClassesBackground();
+
+  if (typeof backgroundCena !== 'string' || !backgroundCena.trim()) {
+    return;
+  }
+
+  const nomeClasse = backgroundCena
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  if (!nomeClasse) {
+    return;
+  }
+
+  elementos.areaBackground.classList.add(`bg-${nomeClasse}`);
+}
+
 function criarBotaoRecomecar() {
   elementos.escolhasContainer.innerHTML = '';
   const botao = document.createElement('button');
@@ -198,7 +228,7 @@ function renderCena(id) {
       cenasDisponiveis: Object.keys(cenas).length
     });
     elementos.nomePersonagem.textContent = nomeJogador || 'SISTEMA';
-    elementos.areaBackground.style.backgroundImage = '';
+    limparClassesBackground();
     elementos.textoDialogo.textContent = 'FIM DO CAPÍTULO';
     criarBotaoRecomecar();
     registrarHistorico('Capítulo encerrado.');
@@ -208,12 +238,7 @@ function renderCena(id) {
   const nomeExibicao = cena.personagem || nomeJogador;
   elementos.nomePersonagem.textContent = nomeExibicao;
 
-  if (cena.background) {
-    const normalizado = cena.background.startsWith('assets/') ? cena.background : `assets/${cena.background}`;
-    elementos.areaBackground.style.backgroundImage = `url("${normalizado}")`;
-  } else {
-    elementos.areaBackground.style.backgroundImage = '';
-  }
+  aplicarClasseBackground(cena.background);
 
   const textoCena = typeof cena.texto === 'string' ? cena.texto : cena.text;
   const escolhasCena = Array.isArray(cena.escolhas) ? cena.escolhas : cena.choices;

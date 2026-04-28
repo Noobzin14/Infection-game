@@ -127,6 +127,18 @@ body {
   position: relative;
 }
 
+.bg-bunker-escuro {
+  background-color: #0f1512;
+}
+
+.bg-bunker-fraco-luz {
+  background-color: #243126;
+}
+
+.bg-bunker-dia {
+  background-color: #4b5f4d;
+}
+
 .bg-bunker-luz {
   background-color: #1a3010;
 }
