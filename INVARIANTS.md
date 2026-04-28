@@ -43,6 +43,9 @@ O campo `efeito` nas escolhas só pode conter:
 - `vida` → number (positivo ou negativo)
 - `sanidade` → number (positivo ou negativo)
 - `inventario` → string ou array de strings
+- `atributos` → object
+- `modificadores` → object
+- `traco` → string
 
 Nenhum outro campo de efeito deve ser processado sem atualizar este arquivo.
 
