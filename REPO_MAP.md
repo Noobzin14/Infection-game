@@ -17,6 +17,10 @@ Infection-game/
 │                           # Gerencia estado global, telas, cenas
 │                           # Dependências: index.html (DOM), story/*.json
 │
+├── dev-mode.js             # Painel oculto de modo desenvolvedor
+│                           # Ativado por sequência de teclado "devmode"
+│                           # Dependências: game.js (globais), logger.js
+│
 ├── story/
 │   └── chapter1.json       # Roteiro do Capítulo 1 — "Despertar"
 │                           # 7 cenas: intro_01 até porta_fresta
