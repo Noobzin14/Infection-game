@@ -19,6 +19,9 @@ Infection-game/
 │
 ├── dev-mode.js             # Painel oculto de modo desenvolvedor
 │                           # Ativado por sequência de teclado "devmode"
+│                           # 7 abas: CENA, STATUS, INVENTÁRIO, DESIGN, REPO, LOGS, LUPA
+│                           # LOGS: intercepta Logger + eventos do jogo em tempo real
+│                           # LUPA: inspetor visual com tooltip, highlight e fixação
 │                           # Dependências: game.js (globais), logger.js
 │
 ├── story/
