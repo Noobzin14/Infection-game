@@ -1,0 +1,26 @@
+name: Exportar Repositório
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '**.js'
+      - '**.css'
+      - '**.html'
+      - '**.json'
+      - '**.md'
+
+jobs:
+  exportar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Executar script de exportação
+        run: python3 scripts/export-repo.py
+      - name: Upload do artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: repo-export-${{ github.sha }}
+          path: repo-export.md
+          retention-days: 30
