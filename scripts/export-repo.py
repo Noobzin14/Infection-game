@@ -41,8 +41,38 @@ def read_text(path):
     if not os.path.exists(abs_path):
         print(f"⚠️ Arquivo não encontrado: {path}")
         return None
-    with open(abs_path, "r", encoding="utf-8") as f:
-        return f.read()
+    try:
+        return open(abs_path, "r", encoding="utf-8").read()
+    except OSError as err:
+        print(f"⚠️ Erro ao ler {path}: {err}")
+        return None
+
+
+def render_file_block(file_path, code_lang=None):
+    content = read_text(file_path)
+    block = [f"### {file_path}"]
+
+    if content is None:
+        block.append("*Aviso: Arquivo não encontrado ou erro de leitura.*\n")
+        block.append("---\n")
+        return block
+
+    language = code_lang
+    if language is None:
+        _, ext = os.path.splitext(file_path)
+        language = {
+            ".md": "markdown",
+            ".json": "json",
+            ".html": "html",
+            ".css": "css",
+            ".js": "javascript",
+            ".yml": "yaml",
+            ".yaml": "yaml",
+        }.get(ext.lower(), "text")
+
+    block.append(f"```{language}\n{content}\n```\n")
+    block.append("---\n")
+    return block
 
 
 def count_nonempty_lines(text):
@@ -163,18 +193,7 @@ def main():
     for section_title, files in SECTIONS:
         output.append(f"## {section_title}\n")
         for file_path, code_lang in files:
-            output.append(f"### {file_path}")
-            content = read_text(file_path)
-            if content is None:
-                output.append("_Arquivo não encontrado._\n")
-                output.append("---\n")
-                continue
-            if code_lang:
-                output.append(f"```{code_lang}\n{content}\n```\n")
-            else:
-                output.append(content)
-                output.append("")
-            output.append("---\n")
+            output.extend(render_file_block(file_path, code_lang))
 
     summary = build_summary()
     repo_map_text = read_text("REPO_MAP.md") or ""
