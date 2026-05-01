@@ -36,8 +36,14 @@ Infection-game/
 │
 ├── .github/
 │   └── workflows/
-│       └── ai-review.yml   # GitHub Actions — revisão automática de PR
-│                           # Usa GitHub Models (GPT-4o) gratuito
+│       ├── ai-review.yml   # GitHub Actions — revisão automática de PR
+│       ├── export-repo.yml # Geração automática do repo-export.md como artefato
+│       └── process-logs.yml# Pipeline para processamento de logs
+│
+│
+├── scripts/
+│   └── export-repo.py      # Exporta documentação + código + dados para repo-export.md
+│                           # Calcula estatísticas e problemas conhecidos
 │
 ├── MEMORY.json             # Memória compartilhada Claude + Codex
 │                           # Lore, mecânicas, bestiário, roteiro, arquitetura
