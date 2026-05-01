@@ -106,3 +106,11 @@ Infection-game/
 - `radio_check` — Tenta consertar o rádio
 - Transição do bunker para a Amazônia
 - Capítulo 2 — A Floresta
+
+
+## Atualizações recentes no dev-mode
+
+- Aba **LOGS** agora inclui busca por texto em tempo real (nível/categoria/mensagem/dados), contador filtrado/total e botão de limpeza da busca.
+- Aba **CENA** agora inclui: histórico de navegação dev com botão de voltar/limpar, e seção **GRAFO DE CENAS** (toggle) com SVG clicável, destaque da cena atual e marcação de cenas referenciadas não escritas.
+- Atalhos globais `Ctrl+Shift+...` adicionados quando DEV_MODE ativo: limpar logs, exportar estado, voltar cena, toggle grafo, toggle lupa, mostrar/ocultar painel e navegação direta entre abas 1-7, com toast discreto.
+- Aba **INVENTÁRIO** substituída por grades tipo Excel para itens e traços, com filtros/busca/exportação, criação via editor JSON com validação por categoria, cache de fetch em sessão para `data/items.json` e `data/character.json`.
