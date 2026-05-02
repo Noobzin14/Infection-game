@@ -227,6 +227,10 @@
               "Faca enferrujada"
             ]
           }
+        },
+        {
+          "texto": "Deixar para lá e continuar explorando",
+          "proxima": "exploracao_01"
         }
       ]
     },
