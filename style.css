@@ -155,7 +155,9 @@ body {
 }
 
 .area-dialogo {
-  height: 30%;
+  min-height: 30%;
+  max-height: 60%;
+  overflow-y: auto;
   background: var(--preto-transparente);
   border-top: 3px solid var(--vermelho-sangue);
   padding: 1rem;
@@ -184,6 +186,19 @@ body {
 
 .botao-escolha {
   min-width: 220px;
+  white-space: normal;
+  word-break: break-word;
+}
+
+@media (max-width: 768px) {
+  .area-dialogo {
+    font-size: 14px;
+    padding: 0.75rem;
+  }
+
+  .botao-escolha {
+    width: 100%;
+  }
 }
 
 .btn-historico {
