@@ -90,6 +90,23 @@ def load_json(path):
         return None
 
 
+def collect_items_from_nested_arrays(data):
+    collected = []
+
+    def walk(node):
+        if isinstance(node, list):
+            if all(isinstance(item, dict) for item in node):
+                collected.extend(node)
+            for item in node:
+                walk(item)
+        elif isinstance(node, dict):
+            for value in node.values():
+                walk(value)
+
+    walk(data)
+    return collected
+
+
 def extract_known_issues(repo_map_text):
     if not repo_map_text:
         return ["- Não foi possível extrair problemas conhecidos (REPO_MAP.md ausente)."]
@@ -127,10 +144,7 @@ def build_summary():
     invariants = read_text("INVARIANTS.md") or ""
 
     cenas = chapter.get("cenas", []) if isinstance(chapter, dict) else []
-    if isinstance(items, dict):
-        raw_items = items.get("items", [])
-    else:
-        raw_items = items if isinstance(items, list) else []
+    raw_items = collect_items_from_nested_arrays(items)
     if isinstance(character, dict):
         tracos = character.get("tracos", [])
     else:
