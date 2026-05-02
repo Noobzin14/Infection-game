@@ -49,7 +49,7 @@
 
   const getAllTraitsFlat = () => (invCache.traits || []).concat(invCache.createdTraits || []);
   const renderCenaTab = () => {
-    const cenas = getVar('cenas') || {}; const cenaAtual = getVar('cenaAtual'); const cena = cenas[cenaAtual] || {};
+    const cenas = getVar('window.GameState.cenas') || {}; const cenaAtual = getVar('window.GameState.cenaAtual'); const cena = cenas[cenaAtual] || {};
     const options = Object.keys(cenas).map((id) => `<option value="${id}">${id}</option>`).join('');
     const escolhas = (cena.escolhas || cena.choices || []).map((e, i) => `<div>${i + 1}. ${escapeHtml(e.texto || e.text)} → ${escapeHtml(e.proxima || e.next_scene || '-')} <button data-go="${escapeHtml(e.proxima || e.next_scene || '')}">IR</button></div>`).join('');
     return `<div><button id="dev-scene-back" ${_historicoNavDev.length ? '' : 'disabled'}>⬅️ VOLTAR (${_historicoNavDev.length})</button> <button id="dev-scene-back-clear">🔄 LIMPAR HISTÓRICO</button></div>
@@ -63,7 +63,7 @@
   };
 
   const renderSceneGraph = () => {
-    const cenas = getVar('cenas') || {}; const ids = Object.keys(cenas); if (!ids.length) return 'Sem cenas carregadas.';
+    const cenas = getVar('window.GameState.cenas') || {}; const ids = Object.keys(cenas); if (!ids.length) return 'Sem cenas carregadas.';
     const inDeg = {}; ids.forEach((id) => (inDeg[id] = 0)); const edges = []; const missing = new Set();
     ids.forEach((id) => ((cenas[id].escolhas || cenas[id].choices || []).forEach((e) => { const t = e.proxima || e.next_scene; if (!t) return; edges.push([id, t]); if (inDeg[t] !== undefined) inDeg[t]++; else missing.add(t); })));    
     const roots = ids.filter((id) => inDeg[id] === 0); const level = {}; const q = roots.length ? [...roots] : [ids[0]]; q.forEach((r) => (level[r] = 0));
@@ -71,7 +71,7 @@
     ids.forEach((id) => { if (level[id] === undefined) level[id] = 0; });
     const buckets = {}; [...ids, ...missing].forEach((id) => { const lv = level[id] ?? 1; (buckets[lv] ||= []).push(id); });
     const pos = {}; let maxRows = 0; Object.entries(buckets).forEach(([lv, list]) => { maxRows = Math.max(maxRows, list.length); list.forEach((id, i) => { pos[id] = { x: Number(lv) * 160 + 20, y: i * 60 + 20 }; }); });
-    const width = (Math.max(...Object.keys(buckets).map(Number)) + 2) * 180; const height = Math.max(260, maxRows * 70 + 60); const atual = getVar('cenaAtual');
+    const width = (Math.max(...Object.keys(buckets).map(Number)) + 2) * 180; const height = Math.max(260, maxRows * 70 + 60); const atual = getVar('window.GameState.cenaAtual');
     const nodes = Object.keys(pos).map((id) => { const ex = !!cenas[id]; const cur = atual === id; const p = pos[id]; const fill = ex ? '#1a1a1a' : '#4a0000'; const stroke = cur ? '#8b0000' : '#444';
       return `<g class="dev-node" data-node-id="${escapeHtml(id)}" style="cursor:${ex ? 'pointer' : 'not-allowed'}"><rect x="${p.x}" y="${p.y}" width="120" height="40" rx="4" fill="${fill}" stroke="${stroke}" stroke-width="${cur ? 3 : 1.2}"/><text x="${p.x + 8}" y="${p.y + 24}" fill="#fff" font-size="12">${escapeHtml(ex ? id : '⚠️ ' + id)}</text></g>`; }).join('');
     const lines = edges.map(([s, t]) => { if (!pos[s] || !pos[t]) return ''; const a = pos[s], b = pos[t]; return `<line x1="${a.x + 120}" y1="${a.y + 20}" x2="${b.x}" y2="${b.y + 20}" stroke="#8b0000" stroke-width="1.5" marker-end="url(#arrow-red)"/>`; }).join('');
@@ -79,7 +79,7 @@
   };
 
   const renderInventarioTab = () => {
-    const inv = getVar('inventario') || []; const tr = getVar('tracos') || [];
+    const inv = getVar('window.GameState.inventario') || []; const tr = getVar('window.GameState.tracos') || [];
     const items = getAllItemsFlat().filter((x) => (invCache.itemFilter === 'Todos' || x.__macro === invCache.itemFilter) && (!invCache.itemSearch || (x.nome || '').toLowerCase().includes(invCache.itemSearch.toLowerCase())));
     items.sort((a, b) => { const k = invCache.itemSort.key; const aa = String(a[k] ?? ''), bb = String(b[k] ?? ''); return invCache.itemSort.dir === 'asc' ? aa.localeCompare(bb) : bb.localeCompare(aa); });
     const rows = items.map((it, idx) => { const inInv = inv.includes(it.id) || inv.includes(it.nome); return `<tr class="${idx % 2 ? 'odd' : 'even'} ${inInv ? 'in-inv' : ''}"><td><button data-add-item-grid="${escapeHtml(it.id)}">➕</button></td><td>${escapeHtml(it.id)}</td><td>${escapeHtml(it.nome)}</td><td>${escapeHtml(it.__macro)}</td><td>${escapeHtml(it.dano ? `${it.dano.min}-${it.dano.max}` : (it.defesa ?? '-'))}</td><td>${escapeHtml(it.peso ?? '-')}</td><td>${escapeHtml(it.raridade ?? '-')}</td></tr>`; }).join('');
@@ -117,7 +117,7 @@
     if (devModePatched) return; devModePatched = true; loggerOriginal = window.Logger;
     if (loggerOriginal) window.Logger = new Proxy(loggerOriginal, { get(target, prop) { if (['debug','info','warn','error','fatal'].includes(prop)) return (c,m,d) => { target[prop](c,m,d); addLogToPanel({ timestamp: new Date().toISOString(), nivel: String(prop).toUpperCase(), categoria: c, mensagem: m, dados: d }); }; return target[prop]; } });
     originalFns.renderCena = window.renderCena;
-    if (typeof originalFns.renderCena === 'function') window.renderCena = function(id){ const prev = getVar('cenaAtual'); if (window.DEV_MODE && prev && prev !== id) { _historicoNavDev.push(prev); if (_historicoNavDev.length > 20) _historicoNavDev.shift(); } addEventToPanel(`renderCena("${id}")`); return originalFns.renderCena.apply(this, arguments); };
+    if (typeof originalFns.renderCena === 'function') window.renderCena = function(id){ const prev = getVar('window.GameState.cenaAtual'); if (window.DEV_MODE && prev && prev !== id) { _historicoNavDev.push(prev); if (_historicoNavDev.length > 20) _historicoNavDev.shift(); } addEventToPanel(`renderCena("${id}")`); return originalFns.renderCena.apply(this, arguments); };
   };
   const revertDevPatches = () => { if (!devModePatched) return; devModePatched = false; if (loggerOriginal) window.Logger = loggerOriginal; if (originalFns.renderCena) window.renderCena = originalFns.renderCena; removeDevShortcuts(); };
 
@@ -170,7 +170,7 @@
     q('#dev-scene-back')?.addEventListener('click', goBackScene);
     q('#dev-scene-back-clear')?.addEventListener('click', () => { _historicoNavDev = []; renderTab('cena'); });
     q('#dev-toggle-graph')?.addEventListener('click', () => { devGraphVisible = !devGraphVisible; renderTab('cena'); });
-    qa('.dev-node').forEach((n) => n.onclick = () => { const id = n.dataset.nodeId; if ((getVar('cenas') || {})[id]) callFn('renderCena', id); });
+    qa('.dev-node').forEach((n) => n.onclick = () => { const id = n.dataset.nodeId; if ((getVar('window.GameState.cenas') || {})[id]) callFn('renderCena', id); });
 
     q('#dev-logs-cat')?.addEventListener('change', (e) => { logsCategoryFilter = e.target.value; updateLogsTabUI(); });
     q('#dev-logs-search')?.addEventListener('input', (e) => { logsSearchText = e.target.value; updateLogsTabUI(); });
@@ -182,12 +182,12 @@
     q('#dev-item-search')?.addEventListener('input', (e) => { invCache.itemSearch = e.target.value; renderTab('inventario'); });
     q('#dev-item-create-toggle')?.addEventListener('click', () => { invCache.itemEditorOpen = !invCache.itemEditorOpen; invCache.itemEditorError = ''; renderTab('inventario'); });
     q('#dev-export-items')?.addEventListener('click', () => downloadJson(getAllItemsFlat(), 'items-export.json'));
-    qa('[data-add-item-grid]').forEach((b) => b.onclick = () => { const id = b.dataset.addItemGrid; const inv = getVar('inventario') || []; if (inv.length < 5) { inv.push(id); callFn('atualizarStatus'); renderTab('inventario'); } });
+    qa('[data-add-item-grid]').forEach((b) => b.onclick = () => { const id = b.dataset.addItemGrid; const inv = getVar('window.GameState.inventario') || []; if (inv.length < 5) { inv.push(id); callFn('atualizarStatus'); renderTab('inventario'); } });
     q('#dev-item-validate')?.addEventListener('click', () => { const text = q('#dev-item-json').value; const cat = q('#dev-item-cat-editor').value; const valid = validateItem(text, cat); if (valid.ok) { invCache.createdItems.push(valid.item); invCache.itemEditorError = ''; showToast('✅ Item criado'); renderTab('inventario'); } else { invCache.itemEditorError = `❌ ${valid.error}`; q('#dev-item-json').style.border = '1px solid #8b0000'; } });
 
     q('#dev-trait-create-toggle')?.addEventListener('click', () => { invCache.traitEditorOpen = !invCache.traitEditorOpen; invCache.traitEditorError = ''; renderTab('inventario'); });
     q('#dev-export-traits')?.addEventListener('click', () => downloadJson(getAllTraitsFlat(), 'tracos-export.json'));
-    qa('[data-add-trait-grid]').forEach((b) => b.onclick = () => { const id = b.dataset.addTraitGrid; const t = getVar('tracos') || []; if (!t.includes(id)) t.push(id); renderTab('inventario'); });
+    qa('[data-add-trait-grid]').forEach((b) => b.onclick = () => { const id = b.dataset.addTraitGrid; const t = getVar('window.GameState.tracos') || []; if (!t.includes(id)) t.push(id); renderTab('inventario'); });
     q('#dev-trait-validate')?.addEventListener('click', () => { const valid = validateTrait(q('#dev-trait-json').value, q('#dev-trait-type-editor').value); if (valid.ok) { invCache.createdTraits.push(valid.trait); invCache.traitEditorError = ''; showToast('✅ Traço criado'); renderTab('inventario'); } else { invCache.traitEditorError = `❌ ${valid.error}`; } });
   }
 
@@ -205,7 +205,7 @@
 
   const validateTrait = (txt, tp) => { let t; try { t = JSON.parse(txt); } catch { return { ok:false, error:'JSON inválido' }; } if (!t.id || typeof t.id !== 'string') return { ok:false, error:"Campo 'id' obrigatório" }; if (!t.nome || typeof t.nome !== 'string') return { ok:false, error:"Campo 'nome' obrigatório" }; if (!t.efeito || typeof t.efeito !== 'object' || !Object.keys(t.efeito).length) return { ok:false, error:"Campo 'efeito' deve ter ao menos uma chave" }; t.tipo = tp === 'positivo' ? 'Positivo' : 'Negativo'; return { ok:true, trait:t }; };
   const downloadJson = (obj, name) => { const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); URL.revokeObjectURL(a.href); };
-  const exportState = () => downloadJson({ nomeJogador: getVar('nomeJogador'), atributos: getVar('atributos'), tracos: getVar('tracos'), statusVida: getVar('statusVida'), statusSanidade: getVar('statusSanidade'), inventario: getVar('inventario'), cenaAtual: getVar('cenaAtual'), historicoSessao: getVar('historicoSessao') }, 'infection-state.json');
+  const exportState = () => downloadJson({ nomeJogador: getVar('window.GameState.nomeJogador'), atributos: getVar('window.GameState.atributos'), tracos: getVar('window.GameState.tracos'), statusVida: getVar('window.GameState.statusVida'), statusSanidade: getVar('window.GameState.statusSanidade'), inventario: getVar('window.GameState.inventario'), cenaAtual: getVar('window.GameState.cenaAtual'), historicoSessao: getVar('window.GameState.historicoSessao') }, 'infection-state.json');
 
   const ensureStyles = () => { if (styleTag) return; styleTag = document.createElement('style'); styleTag.textContent = `#dev-panel{position:fixed;left:20px;top:20px;width:860px;height:620px;z-index:9999;background:rgba(10,10,10,.95);border:1px solid #8b0000;color:#fff;font-family:monospace}.dev-header{display:flex;justify-content:space-between;padding:8px;background:#111;cursor:move}.dev-tabs{display:flex;gap:4px;padding:6px;flex-wrap:wrap}.dev-tab.active{background:#8b0000;color:#fff}.dev-content{padding:8px}.dev-logs-list{max-height:360px;overflow:auto}.dev-log-item{font-size:11px;border-bottom:1px solid #222;padding:4px;cursor:pointer}.dev-graph-scroll{max-height:340px;max-width:100%;overflow:auto;border:1px solid #333;margin-top:6px}.dev-grid{max-height:300px;overflow:auto;border:1px solid #333}table{width:100%;border-collapse:collapse}th,td{border:1px solid #333;padding:4px;font-size:12px}thead th{position:sticky;top:0;background:#111}.odd{background:#151515}.in-inv{background:rgba(46,125,50,.25)}.dev-error{color:#e57373;margin-top:6px}.dev-toast{position:fixed;top:20px;right:20px;z-index:10000;background:rgba(10,10,10,.95);border:1px solid #8b0000;color:#fff;padding:8px 12px;border-radius:6px}`; document.head.appendChild(styleTag); };
 

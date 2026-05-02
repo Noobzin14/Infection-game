@@ -1,20 +1,25 @@
-let nomeJogador = '';
-let cenas = {};
-let cenaAtual = null;
-let statusVida = 100;
-let statusSanidade = 100;
-let inventario = [];
+window.GameState = window.GameState || {};
+
+Object.assign(window.GameState, {
+  nomeJogador: '',
+  cenas: {},
+  cenaAtual: null,
+  statusVida: 100,
+  statusSanidade: 100,
+  inventario: [],
+  historicoSessao: [],
+  velocidadeTexto: 30,
+  atributos: {
+    forca: 5,
+    resistencia: 5,
+    agilidade: 5,
+    percepcao: 5,
+    mente: 5
+  },
+  tracos: []
+});
+
 let configuracaoPersonagem = {};
-let atributos = {
-  forca: 5,
-  resistencia: 5,
-  agilidade: 5,
-  percepcao: 5,
-  mente: 5
-};
-let tracos = [];
-const historicoSessao = [];
-const velocidadeTexto = 30;
 
 let intervaloDigitacao = null;
 let digitando = false;
@@ -50,10 +55,10 @@ function alternarTela(telaAtiva) {
 }
 
 function atualizarStatus() {
-  elementos.statusVida.textContent = `Vida: ${statusVida}`;
-  elementos.statusSanidade.textContent = `Sanidade: ${statusSanidade}`;
+  elementos.statusVida.textContent = `Vida: ${window.GameState.statusVida}`;
+  elementos.statusSanidade.textContent = `Sanidade: ${window.GameState.statusSanidade}`;
   elementos.statusInventario.textContent =
-    `Atributos — FOR ${atributos.forca} | AGI ${atributos.agilidade} | RES ${atributos.resistencia} | PER ${atributos.percepcao} | MEN ${atributos.mente} | Inventário: ${inventario.length}/5`;
+    `Atributos — FOR ${window.GameState.atributos.forca} | AGI ${window.GameState.atributos.agilidade} | RES ${window.GameState.atributos.resistencia} | PER ${window.GameState.atributos.percepcao} | MEN ${window.GameState.atributos.mente} | Inventário: ${window.GameState.inventario.length}/5`;
 }
 
 function limitarAtributo(valor) {
@@ -67,11 +72,11 @@ function recalcularStatusMaximos() {
   const sanidadeBase = typeof formulas.sanidade_base === 'number' ? formulas.sanidade_base : 50;
   const sanidadePorMente = typeof formulas.sanidade_por_mente === 'number' ? formulas.sanidade_por_mente : 10;
 
-  const hpMaximo = hpBase + (atributos.resistencia * hpPorResistencia);
-  const sanidadeMaxima = sanidadeBase + (atributos.mente * sanidadePorMente);
+  const hpMaximo = hpBase + (window.GameState.atributos.resistencia * hpPorResistencia);
+  const sanidadeMaxima = sanidadeBase + (window.GameState.atributos.mente * sanidadePorMente);
 
-  statusVida = Math.max(0, Math.min(100, hpMaximo, statusVida));
-  statusSanidade = Math.max(0, Math.min(100, sanidadeMaxima, statusSanidade));
+  window.GameState.statusVida = Math.max(0, Math.min(100, hpMaximo, window.GameState.statusVida));
+  window.GameState.statusSanidade = Math.max(0, Math.min(100, sanidadeMaxima, window.GameState.statusSanidade));
 }
 
 function avancarCena(escolha, textoEscolha) {
@@ -81,9 +86,9 @@ function avancarCena(escolha, textoEscolha) {
     return;
   }
 
-  if (cenaAtual === 'criacao_03') {
-    statusVida = Math.min(100, 80 + (atributos.resistencia * 10));
-    statusSanidade = Math.min(100, 60 + (atributos.mente * 8));
+  if (window.GameState.cenaAtual === 'criacao_03') {
+    window.GameState.statusVida = Math.min(100, 80 + (window.GameState.atributos.resistencia * 10));
+    window.GameState.statusSanidade = Math.min(100, 60 + (window.GameState.atributos.mente * 8));
     registrarHistorico('Status recalculado após criação do personagem.');
     atualizarStatus();
   }
@@ -118,7 +123,7 @@ function renderEscolhas(cena) {
 
 function registrarHistorico(mensagem) {
   const registro = `[${new Date().toLocaleTimeString('pt-BR')}] ${mensagem}`;
-  historicoSessao.push(registro);
+  window.GameState.historicoSessao.push(registro);
 
   const item = document.createElement('li');
   item.textContent = registro;
@@ -128,8 +133,8 @@ function registrarHistorico(mensagem) {
 function aplicarEfeitos(efeito = {}) {
   if (efeito.atributos && typeof efeito.atributos === 'object') {
     Object.entries(efeito.atributos).forEach(([atributo, valor]) => {
-      if (typeof valor === 'number' && Object.hasOwn(atributos, atributo)) {
-        atributos[atributo] = limitarAtributo(valor);
+      if (typeof valor === 'number' && Object.hasOwn(window.GameState.atributos, atributo)) {
+        window.GameState.atributos[atributo] = limitarAtributo(valor);
       }
     });
     registrarHistorico('Atributos base definidos na criação.');
@@ -137,26 +142,26 @@ function aplicarEfeitos(efeito = {}) {
 
   if (efeito.modificadores && typeof efeito.modificadores === 'object') {
     Object.entries(efeito.modificadores).forEach(([atributo, valor]) => {
-      if (typeof valor === 'number' && Object.hasOwn(atributos, atributo)) {
-        atributos[atributo] = limitarAtributo(atributos[atributo] + valor);
+      if (typeof valor === 'number' && Object.hasOwn(window.GameState.atributos, atributo)) {
+        window.GameState.atributos[atributo] = limitarAtributo(window.GameState.atributos[atributo] + valor);
       }
     });
     registrarHistorico('Atributos modificados por escolha.');
   }
 
   if (typeof efeito.traco === 'string' && efeito.traco.trim()) {
-    if (!tracos.includes(efeito.traco)) {
-      tracos.push(efeito.traco);
+    if (!window.GameState.tracos.includes(efeito.traco)) {
+      window.GameState.tracos.push(efeito.traco);
       registrarHistorico(`Novo traço: ${efeito.traco}`);
     }
   }
 
   if (typeof efeito.vida === 'number') {
-    statusVida = Math.max(0, statusVida + efeito.vida);
+    window.GameState.statusVida = Math.max(0, window.GameState.statusVida + efeito.vida);
   }
 
   if (typeof efeito.sanidade === 'number') {
-    statusSanidade = Math.max(0, statusSanidade + efeito.sanidade);
+    window.GameState.statusSanidade = Math.max(0, window.GameState.statusSanidade + efeito.sanidade);
   }
 
   if (efeito.inventario) {
@@ -177,18 +182,18 @@ function aplicarEfeitos(efeito = {}) {
 }
 
 function adicionarItemInventario(item) {
-  if (inventario.length >= 5) {
+  if (window.GameState.inventario.length >= 5) {
     elementos.textoDialogo.textContent = 'Inventário cheio. Libere espaço antes de avançar.';
     Logger.warn('INVENTARIO', 'Tentativa de adicionar item com inventário cheio.', {
       item,
       capacidade: 5,
-      ocupacaoAtual: inventario.length,
-      cena: cenaAtual
+      ocupacaoAtual: window.GameState.inventario.length,
+      cena: window.GameState.cenaAtual
     });
     return false;
   }
 
-  inventario.push(item);
+  window.GameState.inventario.push(item);
   registrarHistorico(`Item obtido: ${item}`);
   return true;
 }
@@ -217,7 +222,7 @@ function mostrarTextoGradual(texto, aoFinal) {
 
     elementos.textoDialogo.textContent += texto[indice];
     indice += 1;
-  }, velocidadeTexto);
+  }, window.GameState.velocidadeTexto);
 }
 
 
@@ -260,16 +265,16 @@ function criarBotaoRecomecar() {
 }
 
 function renderCena(id) {
-  const cena = cenas[id];
-  cenaAtual = id;
+  const cena = window.GameState.cenas[id];
+  window.GameState.cenaAtual = id;
   elementos.escolhasContainer.innerHTML = '';
 
   if (!cena) {
     Logger.error('CENA', 'Cena não encontrada para renderização.', {
       idSolicitado: id,
-      cenasDisponiveis: Object.keys(cenas).length
+      cenasDisponiveis: Object.keys(window.GameState.cenas).length
     });
-    elementos.nomePersonagem.textContent = nomeJogador || 'SISTEMA';
+    elementos.nomePersonagem.textContent = window.GameState.nomeJogador || 'SISTEMA';
     limparClassesBackground();
     elementos.textoDialogo.textContent = 'FIM DO CAPÍTULO';
     criarBotaoRecomecar();
@@ -277,7 +282,7 @@ function renderCena(id) {
     return;
   }
 
-  const nomeExibicao = cena.personagem || nomeJogador;
+  const nomeExibicao = cena.personagem || window.GameState.nomeJogador;
   elementos.nomePersonagem.textContent = nomeExibicao;
 
   aplicarClasseBackground(cena.background);
@@ -304,12 +309,12 @@ async function carregarCapitulo() {
     }
 
     const dados = await resposta.json();
-    cenas = {};
+    window.GameState.cenas = {};
     for (const cena of dados.cenas || []) {
-      cenas[cena.id] = cena;
+      window.GameState.cenas[cena.id] = cena;
     }
 
-    const primeiraCena = cenas.criacao_01 ? 'criacao_01' : (dados.cenas && dados.cenas[0] && dados.cenas[0].id) || null;
+    const primeiraCena = window.GameState.cenas.criacao_01 ? 'criacao_01' : (dados.cenas && dados.cenas[0] && dados.cenas[0].id) || null;
     if (!primeiraCena) {
       throw new Error('Nenhuma cena encontrada no capítulo.');
     }
@@ -362,7 +367,7 @@ elementos.btnConfirmar.addEventListener('click', async () => {
   }
 
   elementos.erroNome.textContent = '';
-  nomeJogador = nomeDigitado;
+  window.GameState.nomeJogador = nomeDigitado;
   await carregarConfiguracaoPersonagem();
   await carregarCapitulo();
 });
@@ -378,7 +383,7 @@ elementos.textoDialogo.addEventListener('click', () => {
     limparDigitacao();
     elementos.textoDialogo.textContent = textoCompletoAtual;
 
-    const cena = cenas[cenaAtual];
+    const cena = window.GameState.cenas[window.GameState.cenaAtual];
     if (cena) {
       elementos.escolhasContainer.innerHTML = '';
       renderEscolhas(cena);
