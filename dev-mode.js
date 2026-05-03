@@ -99,6 +99,38 @@
   const getTraitTemplate = () => JSON.stringify({ id: '', nome: '', descricao: '', como_revelar: '', efeito: {} }, null, 2);
 
   const renderLogsTab = () => `<div class="dev-logs-toolbar"><div id="dev-logs-levels">${['ALL','DEBUG','INFO','WARN','ERROR','FATAL'].map((l)=>`<button class="dev-log-level" data-level="${l}">${l}</button>`).join('')}</div><select id="dev-logs-cat">${['Todos','JS','JOGO','PIPELINE','CENA','INVENTARIO','JSON','REDE'].map((c)=>`<option>${c}</option>`).join('')}</select><button id="dev-logs-clear">🗑️ LIMPAR</button><button id="dev-logs-export">⬇️ EXPORTAR</button><button id="dev-logs-pause">⏸️ PAUSAR</button></div><div><input id="dev-logs-search" placeholder="🔍 Buscar nos logs..." value="${escapeHtml(logsSearchText)}"><button id="dev-logs-search-clear">✕</button></div><div class="dev-logs-list" id="dev-logs-list"></div>`;
+  const renderStatusTab = () => {
+    const gs = window.GameState ||= {};
+    const attrs = gs.atributos ||= { forca: 5, agilidade: 5, resistencia: 5, percepcao: 5, mente: 5 };
+    const mk = (id, label, v, min, max) => `<div><label>${label}: <strong id="${id}-v">${v}</strong></label><input type="range" id="${id}" min="${min}" max="${max}" value="${v}"><input type="number" id="${id}-n" min="${min}" max="${max}" value="${v}"></div>`;
+    return `<h4>STATUS DO JOGADOR</h4>
+      ${mk('dev-vida', 'Vida', gs.statusVida ?? 100, 0, 100)}
+      ${mk('dev-sanidade', 'Sanidade', gs.statusSanidade ?? 100, 0, 100)}
+      <h4>ATRIBUTOS (1-10)</h4>
+      ${mk('dev-atr-forca', 'Força', attrs.forca ?? 5, 1, 10)}
+      ${mk('dev-atr-agilidade', 'Agilidade', attrs.agilidade ?? 5, 1, 10)}
+      ${mk('dev-atr-resistencia', 'Resistência', attrs.resistencia ?? 5, 1, 10)}
+      ${mk('dev-atr-percepcao', 'Percepção', attrs.percepcao ?? 5, 1, 10)}
+      ${mk('dev-atr-mente', 'Mente', attrs.mente ?? 5, 1, 10)}
+      <div style="margin-top:8px"><button id="dev-status-recalc">RECALCULAR</button> <button id="dev-status-reset">RESETAR TUDO</button></div>`;
+  };
+  const renderDesignTab = () => `<h4>DESIGN</h4>
+    <div><label>--verde-militar <input type="color" id="dev-color-verde"></label></div>
+    <div><label>--vermelho-sangue <input type="color" id="dev-color-vermelho"></label></div>
+    <div><label>--preto-detalhe <input type="color" id="dev-color-preto"></label></div>
+    <div><label>Velocidade de texto: <strong id="dev-text-speed-v">40</strong>ms</label><input type="range" id="dev-text-speed" min="5" max="150" value="40"></div>
+    <div><label><input type="checkbox" id="dev-toggle-scene-ids"> Exibir IDs de cena</label></div>
+    <div><label><input type="checkbox" id="dev-toggle-contrast"> Alto contraste</label></div>
+    <div style="margin-top:8px"><button id="dev-design-reset">RESETAR DESIGN</button></div>`;
+  const renderRepoTab = () => {
+    const gs = window.GameState || {};
+    const cenas = Object.keys(gs.cenas || {}).length;
+    const version = getVar('window.VERSION') || 'desconhecida';
+    return `<h4>REPOSITÓRIO</h4><div><a href="https://github.com/Noobzin14/Infection-game" target="_blank" rel="noreferrer">github.com/Noobzin14/Infection-game</a></div>
+      <h4>ESTADO EM TEMPO REAL</h4>
+      <div>Total de cenas: ${cenas}</div><div>Cena atual: ${escapeHtml(gs.cenaAtual || '-')}</div><div>Itens: ${(gs.inventario || []).length}</div><div>Traços: ${(gs.tracos || []).length}</div><div>DEV_MODE: ${window.DEV_MODE}</div><div>Versão: ${escapeHtml(version)}</div>
+      <div style="margin-top:8px"><button id="dev-export-state">EXPORTAR ESTADO</button> <button id="dev-import-state">IMPORTAR ESTADO</button><input id="dev-import-state-file" type="file" accept=".json,application/json" style="display:none"></div>`;
+  };
 
   const updateLogsCounterLabel = (filtered = null) => { const tab = panel?.querySelector('[data-tab="logs"]'); if (tab) tab.textContent = `LOGS (${filtered ?? devLogs.length}/${devLogs.length})`; };
   const updateLogsTabUI = () => {
@@ -158,6 +190,9 @@
     const c = panel.querySelector('.dev-content');
     if (tab === 'inventario') { await fetchCaches(); c.innerHTML = renderInventarioTab(); }
     else if (tab === 'cena') c.innerHTML = renderCenaTab();
+    else if (tab === 'status') c.innerHTML = renderStatusTab();
+    else if (tab === 'design') c.innerHTML = renderDesignTab();
+    else if (tab === 'repo') c.innerHTML = renderRepoTab();
     else if (tab === 'logs') c.innerHTML = renderLogsTab();
     else if (tab === 'lupa') c.innerHTML = `<div><button id="dev-lupa-toggle">${lupaAtiva ? '🔍 Desativar Lupa' : '🔍 Ativar Lupa'}</button><div id="dev-lupa-fixado" style="margin-top:8px">${lupaFixado ? 'Elemento fixado.' : '<em>Nenhum elemento fixado.</em>'}</div></div>`;
     else c.innerHTML = '<div>Conteúdo mantido.</div>';
@@ -173,7 +208,35 @@
     q('#dev-toggle-graph')?.addEventListener('click', () => { devGraphVisible = !devGraphVisible; renderTab('cena'); });
     const btnAplicar = q('#dev-apply-text'); const textareaCena = q('#dev-scene-text');
     if (btnAplicar && textareaCena) btnAplicar.addEventListener('click', () => { const cenaAtual = getVar('window.GameState.cenaAtual'); const cenas = getVar('window.GameState.cenas'); if (!cenaAtual || !cenas || !cenas[cenaAtual]) return; cenas[cenaAtual].texto = textareaCena.value; if (typeof renderCena === 'function') renderCena(cenaAtual); });
+    qa('[data-go]').forEach((b) => b.addEventListener('click', () => { const target = (b.dataset.go || '').trim(); if (!target) return showToast('Escolha sem próxima cena.'); callFn('renderCena', target); renderTab('cena'); }));
     qa('.dev-node').forEach((n) => n.onclick = () => { const id = n.dataset.nodeId; if ((getVar('window.GameState.cenas') || {})[id]) callFn('renderCena', id); });
+    const bindPair = (id, min, max, cb) => {
+      const r = q(`#${id}`); const n = q(`#${id}-n`); const v = q(`#${id}-v`); if (!r || !n || !v) return;
+      const sync = (val) => { const nv = clamp(Number(val) || 0, min, max); r.value = nv; n.value = nv; v.textContent = nv; cb?.(nv); };
+      r.addEventListener('input', () => sync(r.value)); n.addEventListener('input', () => sync(n.value));
+    };
+    bindPair('dev-vida', 0, 100, (v) => window.GameState.statusVida = v);
+    bindPair('dev-sanidade', 0, 100, (v) => window.GameState.statusSanidade = v);
+    bindPair('dev-atr-forca', 1, 10, (v) => (window.GameState.atributos ||= {}).forca = v);
+    bindPair('dev-atr-agilidade', 1, 10, (v) => (window.GameState.atributos ||= {}).agilidade = v);
+    bindPair('dev-atr-resistencia', 1, 10, (v) => (window.GameState.atributos ||= {}).resistencia = v);
+    bindPair('dev-atr-percepcao', 1, 10, (v) => (window.GameState.atributos ||= {}).percepcao = v);
+    bindPair('dev-atr-mente', 1, 10, (v) => (window.GameState.atributos ||= {}).mente = v);
+    q('#dev-status-recalc')?.addEventListener('click', () => { callFn('atualizarStatus'); showToast('Status recalculado.'); });
+    q('#dev-status-reset')?.addEventListener('click', () => { window.GameState.statusVida = 100; window.GameState.statusSanidade = 100; window.GameState.atributos = { forca: 5, agilidade: 5, resistencia: 5, percepcao: 5, mente: 5 }; renderTab('status'); callFn('atualizarStatus'); });
+    const root = document.documentElement;
+    const getCssVar = (name, fallback) => (getComputedStyle(root).getPropertyValue(name).trim() || fallback);
+    const setupColor = (id, varName, fallback) => { const el = q(`#${id}`); if (!el) return; el.value = getCssVar(varName, fallback); el.addEventListener('input', () => root.style.setProperty(varName, el.value)); };
+    setupColor('dev-color-verde', '--verde-militar', '#355e3b');
+    setupColor('dev-color-vermelho', '--vermelho-sangue', '#8b0000');
+    setupColor('dev-color-preto', '--preto-detalhe', '#111111');
+    q('#dev-text-speed')?.addEventListener('input', (e) => { const val = Number(e.target.value); q('#dev-text-speed-v').textContent = val; window.GameState.textSpeed = val; });
+    q('#dev-toggle-scene-ids')?.addEventListener('change', (e) => { window.GameState.showSceneIds = !!e.target.checked; document.body.classList.toggle('dev-show-scene-ids', !!e.target.checked); });
+    q('#dev-toggle-contrast')?.addEventListener('change', (e) => document.body.classList.toggle('dev-high-contrast', !!e.target.checked));
+    q('#dev-design-reset')?.addEventListener('click', () => { root.style.removeProperty('--verde-militar'); root.style.removeProperty('--vermelho-sangue'); root.style.removeProperty('--preto-detalhe'); window.GameState.textSpeed = 40; document.body.classList.remove('dev-show-scene-ids', 'dev-high-contrast'); renderTab('design'); });
+    q('#dev-export-state')?.addEventListener('click', exportState);
+    q('#dev-import-state')?.addEventListener('click', () => q('#dev-import-state-file')?.click());
+    q('#dev-import-state-file')?.addEventListener('change', async (e) => { const file = e.target.files?.[0]; if (!file) return; try { const data = JSON.parse(await file.text()); window.GameState = { ...(window.GameState || {}), ...data }; callFn('atualizarStatus'); showToast('Estado importado.'); renderTab('repo'); } catch { showToast('JSON inválido.'); } });
 
     q('#dev-logs-cat')?.addEventListener('change', (e) => { logsCategoryFilter = e.target.value; updateLogsTabUI(); });
     q('#dev-logs-search')?.addEventListener('input', (e) => { logsSearchText = e.target.value; updateLogsTabUI(); });
@@ -228,7 +291,7 @@
   const downloadJson = (obj, name) => { const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); URL.revokeObjectURL(a.href); };
   const exportState = () => downloadJson({ nomeJogador: getVar('window.GameState.nomeJogador'), atributos: getVar('window.GameState.atributos'), tracos: getVar('window.GameState.tracos'), statusVida: getVar('window.GameState.statusVida'), statusSanidade: getVar('window.GameState.statusSanidade'), inventario: getVar('window.GameState.inventario'), cenaAtual: getVar('window.GameState.cenaAtual'), historicoSessao: getVar('window.GameState.historicoSessao') }, 'infection-state.json');
 
-  const ensureStyles = () => { if (styleTag) return; styleTag = document.createElement('style'); styleTag.textContent = `#dev-panel{position:fixed;left:20px;top:20px;width:860px;height:620px;z-index:9999;background:rgba(10,10,10,.95);border:1px solid #8b0000;color:#fff;font-family:monospace}.dev-header{display:flex;justify-content:space-between;padding:8px;background:#111;cursor:move}.dev-tabs{display:flex;gap:4px;padding:6px;flex-wrap:wrap}.dev-tab.active{background:#8b0000;color:#fff}.dev-content{padding:8px}.dev-logs-list{max-height:360px;overflow:auto}.dev-log-item{font-size:11px;border-bottom:1px solid #222;padding:4px;cursor:pointer}.dev-graph-scroll{max-height:340px;max-width:100%;overflow:auto;border:1px solid #333;margin-top:6px}.dev-grid{max-height:300px;overflow:auto;border:1px solid #333}table{width:100%;border-collapse:collapse}th,td{border:1px solid #333;padding:4px;font-size:12px}thead th{position:sticky;top:0;background:#111}.odd{background:#151515}.in-inv{background:rgba(46,125,50,.25)}.dev-error{color:#e57373;margin-top:6px}.dev-toast{position:fixed;top:20px;right:20px;z-index:10000;background:rgba(10,10,10,.95);border:1px solid #8b0000;color:#fff;padding:8px 12px;border-radius:6px}`; document.head.appendChild(styleTag); };
+  const ensureStyles = () => { if (styleTag) return; styleTag = document.createElement('style'); styleTag.textContent = `#dev-panel{position:fixed;left:20px;top:20px;width:860px;height:620px;z-index:9999;background:rgba(10,10,10,.95);border:1px solid #8b0000;color:#fff;font-family:monospace}.dev-header{display:flex;justify-content:space-between;padding:8px;background:#111;cursor:move}.dev-tabs{display:flex;gap:4px;padding:6px;flex-wrap:wrap}.dev-tab.active{background:#8b0000;color:#fff}.dev-content{padding:8px}.dev-logs-list{max-height:360px;overflow:auto}.dev-log-item{font-size:11px;border-bottom:1px solid #222;padding:4px;cursor:pointer}.dev-graph-scroll{max-height:340px;max-width:100%;overflow:auto;border:1px solid #333;margin-top:6px}.dev-grid{max-height:300px;overflow:auto;border:1px solid #333}.dev-grid table{width:100%;border-collapse:collapse;table-layout:fixed}.dev-grid th:nth-child(1),.dev-grid td:nth-child(1){width:60px}.dev-grid th:nth-child(2),.dev-grid td:nth-child(2){width:160px}.dev-grid th:nth-child(3),.dev-grid td:nth-child(3){width:160px}.dev-grid th:nth-child(4),.dev-grid td:nth-child(4){width:90px}.dev-grid th:nth-child(5),.dev-grid td:nth-child(5){width:80px}.dev-grid th:nth-child(6),.dev-grid td:nth-child(6){width:50px}.dev-grid th:nth-child(7),.dev-grid td:nth-child(7){width:70px}th,td{border:1px solid #333;padding:4px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}thead th{position:sticky;top:0;background:#111}.odd{background:#151515}.in-inv{background:rgba(46,125,50,.25)}.dev-error{color:#e57373;margin-top:6px}.dev-toast{position:fixed;top:20px;right:20px;z-index:10000;background:rgba(10,10,10,.95);border:1px solid #8b0000;color:#fff;padding:8px 12px;border-radius:6px}.dev-high-contrast{filter:contrast(1.3) brightness(1.05)}`; document.head.appendChild(styleTag); };
 
   const buildPanel = () => { if (panel && document.body.contains(panel)) return panel; panel = document.createElement('div'); panel.id = 'dev-panel'; panel.innerHTML = `<div id="dev-header" class="dev-header"><span>⚙️ DEV MODE</span><button id="dev-hide">X</button></div><div class="dev-tabs"></div><div class="dev-content"></div>`; document.body.appendChild(panel); [['cena','CENA'],['status','STATUS'],['inventario','INVENTÁRIO'],['design','DESIGN'],['repo','REPO'],['logs','LOGS'],['lupa','LUPA ⚫']].forEach(([id, label]) => { const b = document.createElement('button'); b.className='dev-tab'; b.dataset.tab=id; b.textContent=label; b.onclick = () => renderTab(id); panel.querySelector('.dev-tabs').appendChild(b); }); panel.querySelector('#dev-hide').onclick = () => panel.style.display = 'none';
     const header = document.getElementById('dev-header'); let isDragging = false; let dragOffsetX = 0; let dragOffsetY = 0;
