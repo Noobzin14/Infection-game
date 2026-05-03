@@ -19,7 +19,7 @@ Infection-game/
 │
 ├── dev-mode.js             # Painel oculto de modo desenvolvedor
 │                           # Ativado por sequência de teclado "devmode"
-│                           # 7 abas: CENA, STATUS, INVENTÁRIO, DESIGN, REPO, LOGS, LUPA
+│                           # 7 abas: CENA, STATUS, INVENTÁRIO, DESIGN, REPO, LOGS, LUPA (expandida)
 │                           # LOGS: intercepta Logger + eventos do jogo em tempo real
 │                           # LUPA: inspetor visual com tooltip, highlight e fixação
 │                           # Dependências: game.js (globais), logger.js
@@ -120,3 +120,5 @@ Infection-game/
 - Aba **CENA** agora inclui: histórico de navegação dev com botão de voltar/limpar, e seção **GRAFO DE CENAS** (toggle) com SVG clicável, destaque da cena atual e marcação de cenas referenciadas não escritas.
 - Atalhos globais `Ctrl+Shift+...` adicionados quando DEV_MODE ativo: limpar logs, exportar estado, voltar cena, toggle grafo, toggle lupa, mostrar/ocultar painel e navegação direta entre abas 1-7, com toast discreto.
 - Aba **INVENTÁRIO** substituída por grades tipo Excel para itens e traços, com filtros/busca/exportação, criação via editor JSON com validação por categoria, cache de fetch em sessão para `data/items.json` e `data/character.json`.
+
+- Aba **LUPA** expandida com 4 sub-seções: Elemento Fixado, Editor de Conteúdo (texto/atributos/CSS inline), Color Picker HSL em canvas com destino em elemento/variável global e bloco de Variáveis Globais migrado da DESIGN.
