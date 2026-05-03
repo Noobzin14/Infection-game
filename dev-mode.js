@@ -19,6 +19,8 @@
   let lupaFixado = null;
   let _lupaMouseMove = null;
   let _lupaClick = null;
+  let lupaColorState = { h: 95, s: 42, l: 20, target: 'var', prop: 'background-color', varName: '--verde-militar' };
+  let _lupaColorDrag = null;
   let _historicoNavDev = [];
   let devGraphVisible = false;
   let devKeyHandler = null;
@@ -114,14 +116,63 @@
       ${mk('dev-atr-mente', 'Mente', attrs.mente ?? 5, 1, 10)}
       <div style="margin-top:8px"><button id="dev-status-recalc">RECALCULAR</button> <button id="dev-status-reset">RESETAR TUDO</button></div>`;
   };
-  const renderDesignTab = () => `<h4>DESIGN</h4>
-    <div><label>--verde-militar <input type="color" id="dev-color-verde"></label></div>
-    <div><label>--vermelho-sangue <input type="color" id="dev-color-vermelho"></label></div>
-    <div><label>--preto-detalhe <input type="color" id="dev-color-preto"></label></div>
+  const renderDesignTab = () => `<h4>DESIGN</h4><p>Aba preservada. Controles migrados para LUPA.</p>`;
+
+  const hexToRgb = (hex) => {
+    const clean = String(hex || '').trim().replace('#', '');
+    if (!/^[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/.test(clean)) return null;
+    const full = clean.length === 3 ? clean.split('').map((c) => c + c).join('') : clean;
+    const num = parseInt(full, 16);
+    return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+  };
+  const rgbToHex = (r, g, b) => '#' + [r,g,b].map((v) => clamp(Math.round(v), 0, 255).toString(16).padStart(2, '0')).join('').toUpperCase();
+  const rgbToHsl = (r, g, b) => {
+    r /= 255; g /= 255; b /= 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h = 0, s = 0; const l = (max + min) / 2;
+    if (max !== min) {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      if (max === r) h = ((g - b) / d + (g < b ? 6 : 0));
+      else if (max === g) h = (b - r) / d + 2;
+      else h = (r - g) / d + 4;
+      h *= 60;
+    }
+    return { h: Math.round(h), s: Math.round(s * 100), l: Math.round(l * 100) };
+  };
+  const hslToRgb = (h, s, l) => {
+    h = ((h % 360) + 360) % 360; s = clamp(s, 0, 100) / 100; l = clamp(l, 0, 100) / 100;
+    const c = (1 - Math.abs(2 * l - 1)) * s; const x = c * (1 - Math.abs((h / 60) % 2 - 1)); const m = l - c / 2;
+    let r = 0, g = 0, b = 0;
+    if (h < 60) [r,g,b]=[c,x,0]; else if (h < 120) [r,g,b]=[x,c,0]; else if (h < 180) [r,g,b]=[0,c,x]; else if (h < 240) [r,g,b]=[0,x,c]; else if (h < 300) [r,g,b]=[x,0,c]; else [r,g,b]=[c,0,x];
+    return { r: Math.round((r + m) * 255), g: Math.round((g + m) * 255), b: Math.round((b + m) * 255) };
+  };
+  const renderGlobalVarsControls = () => `<h4>🎨 VARIÁVEIS GLOBAIS</h4>
+    ${['verde','vermelho','preto'].map((n,idx)=>`<div><label>${['--verde-militar','--vermelho-sangue','--preto-detalhe'][idx]} <input type="color" id="dev-color-${n}"></label> <button data-open-picker="${['--verde-militar','--vermelho-sangue','--preto-detalhe'][idx]}">🎨 Abrir no Picker</button></div>`).join('')}
     <div><label>Velocidade de texto: <strong id="dev-text-speed-v">40</strong>ms</label><input type="range" id="dev-text-speed" min="5" max="150" value="40"></div>
     <div><label><input type="checkbox" id="dev-toggle-scene-ids"> Exibir IDs de cena</label></div>
     <div><label><input type="checkbox" id="dev-toggle-contrast"> Alto contraste</label></div>
     <div style="margin-top:8px"><button id="dev-design-reset">RESETAR DESIGN</button></div>`;
+
+  const renderLupaTab = () => {
+    const fx = lupaFixado;
+    const attrs = fx ? Array.from(fx.attributes || []).map((a, i) => `<div><code>${escapeHtml(a.name)}</code> <input data-attr-name="${escapeHtml(a.name)}" value="${escapeHtml(a.value)}"> <button data-attr-rm="${escapeHtml(a.name)}">✕</button></div>`).join('') : '<em>Clique num elemento com a lupa ativa para editar</em>';
+    const styles = fx ? Array.from(fx.style || []).map((p) => `<div><code>${escapeHtml(p)}</code> <input data-style-name="${escapeHtml(p)}" value="${escapeHtml(fx.style.getPropertyValue(p))}"> <button data-style-rm="${escapeHtml(p)}">✕</button></div>`).join('') : '<em>Clique num elemento com a lupa ativa para editar</em>';;
+    const rgb = hslToRgb(lupaColorState.h, lupaColorState.s, lupaColorState.l);
+    const hex = rgbToHex(rgb.r, rgb.g, rgb.b);
+    return `<div><button id="dev-lupa-toggle">${lupaAtiva ? '🔍 Desativar Lupa' : '🔍 Ativar Lupa'}</button> <strong>LUPA ${lupaAtiva ? '🟢' : '⚫'}</strong></div>
+    <hr><h4>SUB-SEÇÃO 1: ELEMENTO FIXADO</h4><div id="dev-lupa-fixado">${fx ? `<strong>📌 FIXADO: ${fx.tagName.toLowerCase()}${fx.id ? '#' + fx.id : ''}</strong><br><small>${escapeHtml(fx.className || '(sem classes)')}</small><br><textarea readonly style="width:100%;height:80px;background:#111;color:#fff;font-size:10px;border:1px solid #333">${escapeHtml(fx.outerHTML.substring(0,500))}</textarea><br><button id="dev-lupa-copy">COPIAR HTML</button><button id="dev-lupa-destacar">DESTACAR</button><button id="dev-lupa-soltar">SOLTAR</button>` : '<em>Nenhum elemento fixado.</em>'}</div>
+    <hr><h4>✏️ EDITAR CONTEÚDO</h4><div><label>Texto visível:</label><textarea id="dev-fix-text" ${fx?'':'disabled placeholder="Clique num elemento com a lupa ativa para editar"'}>${escapeHtml(fx?.innerText||'')}</textarea><button id="dev-fix-apply-text" ${fx?'':'disabled'}>APLICAR TEXTO</button></div>
+    <div><label>Atributos HTML:</label>${attrs}<div><input id="dev-attr-new-name" placeholder="nome" ${fx?'':'disabled'}><input id="dev-attr-new-val" placeholder="valor" ${fx?'':'disabled'}><button id="dev-attr-add" ${fx?'':'disabled'}>+ ADICIONAR ATRIBUTO</button></div></div>
+    <div><label>CSS inline (style):</label>${styles}<div><input id="dev-style-new-name" placeholder="propriedade CSS" ${fx?'':'disabled'}><input id="dev-style-new-val" placeholder="valor" ${fx?'':'disabled'}><button id="dev-style-add" ${fx?'':'disabled'}>APLICAR</button> <button id="dev-style-clear" ${fx?'':'disabled'}>LIMPAR STYLE</button></div></div><small>Alterações temporárias — recarregar perde as mudanças</small>
+    <hr><h4 id="dev-color-picker">🎨 COLOR PICKER</h4><canvas id="dev-color-canvas" width="220" height="220" style="border:1px solid #333"></canvas><div id="dev-color-preview" style="margin-top:6px">Preview <span style="display:inline-block;width:40px;height:16px;background:${hex}"></span> <code>${hex}</code> <button id="dev-color-copy">📋 COPIAR</button></div>
+    <div>R <input type="range" id="dev-r" min="0" max="255" value="${rgb.r}"> <input id="dev-r-n" value="${rgb.r}"></div><div>G <input type="range" id="dev-g" min="0" max="255" value="${rgb.g}"> <input id="dev-g-n" value="${rgb.g}"></div><div>B <input type="range" id="dev-b" min="0" max="255" value="${rgb.b}"> <input id="dev-b-n" value="${rgb.b}"></div>
+    <div>H <input id="dev-h-n" value="${lupaColorState.h}">° S <input id="dev-s-n" value="${lupaColorState.s}">% L <input id="dev-l-n" value="${lupaColorState.l}">%</div>
+    <div><label><input type="radio" name="dev-color-target" value="element" ${lupaColorState.target==='element'?'checked':''}> Elemento fixado</label> Propriedade: <select id="dev-color-prop"><option>color</option><option>background-color</option><option>border-color</option><option>outline-color</option></select></div>
+    <div><label><input type="radio" name="dev-color-target" value="var" ${lupaColorState.target==='var'?'checked':''}> Variável CSS global</label> Variável: <select id="dev-color-var">${['--verde-militar','--vermelho-sangue','--preto-detalhe','--vermelho-hover','--preto-transparente'].map((v)=>`<option ${v===lupaColorState.varName?'selected':''}>${v}</option>`).join('')}</select></div><button id="dev-color-apply">✅ APLICAR COR</button>
+    <hr><div id="dev-lupa-globals">${renderGlobalVarsControls()}</div>`;
+  };
+
   const renderRepoTab = () => {
     const gs = window.GameState || {};
     const cenas = Object.keys(gs.cenas || {}).length;
@@ -194,7 +245,7 @@
     else if (tab === 'design') c.innerHTML = renderDesignTab();
     else if (tab === 'repo') c.innerHTML = renderRepoTab();
     else if (tab === 'logs') c.innerHTML = renderLogsTab();
-    else if (tab === 'lupa') c.innerHTML = `<div><button id="dev-lupa-toggle">${lupaAtiva ? '🔍 Desativar Lupa' : '🔍 Ativar Lupa'}</button><div id="dev-lupa-fixado" style="margin-top:8px">${lupaFixado ? 'Elemento fixado.' : '<em>Nenhum elemento fixado.</em>'}</div></div>`;
+    else if (tab === 'lupa') c.innerHTML = renderLupaTab();
     else c.innerHTML = '<div>Conteúdo mantido.</div>';
     bindTabEvents(); if (tab === 'logs') updateLogsTabUI();
   };
@@ -264,6 +315,36 @@
     q('#dev-export-traits')?.addEventListener('click', () => downloadJson(getAllTraitsFlat(), 'tracos-export.json'));
     qa('[data-add-trait-grid]').forEach((b) => b.onclick = () => { const id = b.dataset.addTraitGrid; const t = getVar('window.GameState.tracos') || []; if (!t.includes(id)) t.push(id); renderTab('inventario'); });
     q('#dev-trait-validate')?.addEventListener('click', () => { const valid = validateTrait(q('#dev-trait-json').value, q('#dev-trait-type-editor').value); if (valid.ok) { invCache.createdTraits.push(valid.trait); invCache.traitEditorError = ''; showToast('✅ Traço criado'); renderTab('inventario'); } else { invCache.traitEditorError = `❌ ${valid.error}`; } });
+    if (activeTab === 'lupa') {
+      const refreshFromHsl = () => { const rgb = hslToRgb(lupaColorState.h, lupaColorState.s, lupaColorState.l); const hex = rgbToHex(rgb.r, rgb.g, rgb.b); ['r','g','b'].forEach((k)=>{ q(`#dev-${k}`) && (q(`#dev-${k}`).value = rgb[k]); q(`#dev-${k}-n`) && (q(`#dev-${k}-n`).value = rgb[k]); }); q('#dev-h-n') && (q('#dev-h-n').value=lupaColorState.h); q('#dev-s-n') && (q('#dev-s-n').value=lupaColorState.s); q('#dev-l-n') && (q('#dev-l-n').value=lupaColorState.l); const pv=q('#dev-color-preview'); if (pv) pv.innerHTML = `Preview <span style="display:inline-block;width:40px;height:16px;background:${hex}"></span> <code>${hex}</code> <button id="dev-color-copy">📋 COPIAR</button>`; q('#dev-color-copy')?.addEventListener('click', ()=>navigator.clipboard.writeText(hex)); drawPicker(); };
+      const drawPicker = () => { const c = q('#dev-color-canvas'); if (!c) return; const ctx = c.getContext('2d'); const cx=110, cy=110, r=90, ri=70; ctx.clearRect(0,0,220,220); for(let a=0;a<360;a+=1){ ctx.beginPath(); ctx.strokeStyle=`hsl(${a} 100% 50%)`; ctx.lineWidth=20; ctx.arc(cx,cy,80,(a-1)*Math.PI/180,a*Math.PI/180); ctx.stroke(); } const sq=100,x0=cx-sq/2,y0=cy-sq/2; for(let x=0;x<sq;x++){ for(let y=0;y<sq;y++){ const s=x/sq*100,l=100-y/sq*100; const rgb=hslToRgb(lupaColorState.h,s,l); ctx.fillStyle=rgbToHex(rgb.r,rgb.g,rgb.b); ctx.fillRect(x0+x,y0+y,1,1);} }
+        const ang=lupaColorState.h*Math.PI/180; ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(cx+Math.cos(ang)*80,cy+Math.sin(ang)*80,5,0,Math.PI*2); ctx.stroke(); ctx.beginPath(); ctx.arc(x0 + lupaColorState.s/100*sq, y0 + (100-lupaColorState.l)/100*sq,4,0,Math.PI*2); ctx.stroke();
+      };
+      const canvas = q('#dev-color-canvas');
+      if (canvas) { const pick=(e)=>{ const rect=canvas.getBoundingClientRect(); const x=e.clientX-rect.left,y=e.clientY-rect.top; const dx=x-110,dy=y-110,d=Math.hypot(dx,dy); const sq=100,x0=60,y0=60; if(_lupaColorDrag==='hue' || (d<=90&&d>=70)){ lupaColorState.h = Math.round((Math.atan2(dy,dx)*180/Math.PI+360)%360); _lupaColorDrag='hue'; } else if(_lupaColorDrag==='sl' || (x>=x0&&x<=x0+sq&&y>=y0&&y<=y0+sq)){ lupaColorState.s = clamp(Math.round((x-x0)/sq*100),0,100); lupaColorState.l = clamp(100-Math.round((y-y0)/sq*100),0,100); _lupaColorDrag='sl'; } refreshFromHsl(); };
+        canvas.addEventListener('mousedown',(e)=>{pick(e); const mm=(ev)=>pick(ev); const mu=()=>{_lupaColorDrag=null; document.removeEventListener('mousemove',mm); document.removeEventListener('mouseup',mu);}; document.addEventListener('mousemove',mm); document.addEventListener('mouseup',mu);});
+      }
+      ['r','g','b'].forEach((k)=>{ q(`#dev-${k}`)?.addEventListener('input',()=>{ const rgb={r:+q('#dev-r').value,g:+q('#dev-g').value,b:+q('#dev-b').value}; Object.assign(lupaColorState,rgbToHsl(rgb.r,rgb.g,rgb.b)); refreshFromHsl(); }); q(`#dev-${k}-n`)?.addEventListener('input',()=>{ q(`#dev-${k}`).value=q(`#dev-${k}-n`).value; q(`#dev-${k}`).dispatchEvent(new Event('input')); });});
+      [['h',360],['s',100],['l',100]].forEach(([k,max])=> q(`#dev-${k}-n`)?.addEventListener('input',()=>{ lupaColorState[k]=clamp(+q(`#dev-${k}-n`).value||0,0,max); refreshFromHsl(); }));
+      q('#dev-color-prop') && (q('#dev-color-prop').value = lupaColorState.prop);
+      q('#dev-color-prop')?.addEventListener('change',(e)=>lupaColorState.prop=e.target.value);
+      q('#dev-color-var')?.addEventListener('change',(e)=>lupaColorState.varName=e.target.value);
+      qa('input[name="dev-color-target"]').forEach((r)=>r.addEventListener('change',(e)=>lupaColorState.target=e.target.value));
+      q('#dev-color-apply')?.addEventListener('click',()=>{ const rgb=hslToRgb(lupaColorState.h,lupaColorState.s,lupaColorState.l); const hex=rgbToHex(rgb.r,rgb.g,rgb.b); if(lupaColorState.target==='element'){ if(!lupaFixado) return showToast('Fixe um elemento primeiro.'); lupaFixado.style.setProperty(lupaColorState.prop,hex);} else { document.documentElement.style.setProperty(lupaColorState.varName,hex);} showToast(`Cor aplicada: ${hex}`); renderTab('lupa'); });
+      q('#dev-fix-apply-text')?.addEventListener('click',()=>{ if(lupaFixado) lupaFixado.innerText=q('#dev-fix-text').value; });
+      qa('[data-attr-name]').forEach((i)=>i.addEventListener('input',()=>lupaFixado?.setAttribute(i.dataset.attrName,i.value)));
+      qa('[data-attr-rm]').forEach((b)=>b.addEventListener('click',()=>{lupaFixado?.removeAttribute(b.dataset.attrRm); renderTab('lupa');}));
+      q('#dev-attr-add')?.addEventListener('click',()=>{ const n=q('#dev-attr-new-name').value.trim(); if(!n||!lupaFixado) return; lupaFixado.setAttribute(n,q('#dev-attr-new-val').value); renderTab('lupa'); });
+      qa('[data-style-name]').forEach((i)=>i.addEventListener('input',()=>lupaFixado?.style.setProperty(i.dataset.styleName,i.value)));
+      qa('[data-style-rm]').forEach((b)=>b.addEventListener('click',()=>{lupaFixado?.style.removeProperty(b.dataset.styleRm); renderTab('lupa');}));
+      q('#dev-style-add')?.addEventListener('click',()=>{ const p=q('#dev-style-new-name').value.trim(); if(!p||!lupaFixado) return; lupaFixado.style.setProperty(p,q('#dev-style-new-val').value); renderTab('lupa'); });
+      q('#dev-style-clear')?.addEventListener('click',()=>{ if(lupaFixado){lupaFixado.style.cssText=''; renderTab('lupa');} });
+      q('#dev-lupa-copy')?.addEventListener('click',()=>lupaFixado&&navigator.clipboard.writeText(lupaFixado.outerHTML));
+      q('#dev-lupa-destacar')?.addEventListener('click',()=>{ if(!lupaFixado) return; lupaFixado.style.outline='2px solid #ff1744'; setTimeout(()=>{ if(lupaFixado) lupaFixado.style.outline='';},2000);});
+      q('#dev-lupa-soltar')?.addEventListener('click',()=>{lupaFixado=null; renderTab('lupa');});
+      qa('[data-open-picker]').forEach((b)=>b.addEventListener('click',()=>{ const v=b.dataset.openPicker; const c=getComputedStyle(document.documentElement).getPropertyValue(v).trim(); const rgb=hexToRgb(c); if(rgb) Object.assign(lupaColorState,rgbToHsl(rgb.r,rgb.g,rgb.b)); lupaColorState.target='var'; lupaColorState.varName=v; renderTab('lupa'); q('#dev-color-picker')?.scrollIntoView({behavior:'smooth',block:'start'}); }));
+      refreshFromHsl();
+    }
     const toggleLupa = q('#dev-lupa-toggle');
     if (toggleLupa) toggleLupa.addEventListener('click', () => { if (lupaAtiva) stopLupa(); else startLupa(); toggleLupa.textContent = lupaAtiva ? '🔍 Desativar Lupa' : '🔍 Ativar Lupa'; const abaLupa = document.querySelector('[data-tab="lupa"]'); if (abaLupa) abaLupa.textContent = lupaAtiva ? 'LUPA 🟢' : 'LUPA ⚫'; });
   }
@@ -271,7 +352,7 @@
 
   function startLupa() { lupaAtiva = true; document.body.style.cursor = 'crosshair'; lupaTooltip = document.createElement('div'); lupaTooltip.id = 'dev-lupa-tooltip'; lupaTooltip.style.cssText = 'position: fixed; z-index: 99999; pointer-events: none; background: rgba(10,10,10,0.97); border: 1px solid #8b0000; color: #fff; font-family: monospace; font-size: 11px; padding: 8px; max-width: 320px; white-space: pre; display: none;'; document.body.appendChild(lupaTooltip);
     _lupaMouseMove = (e) => { const el = document.elementFromPoint(e.clientX, e.clientY); if (!el || el.closest('#dev-panel') || el.id === 'dev-lupa-tooltip') { lupaTooltip.style.display = 'none'; return; } if (lupaHighlight && lupaHighlight !== el) lupaHighlight.style.outline = ''; lupaHighlight = el; el.style.outline = '1px dashed rgba(139,0,0,0.7)'; const rect = el.getBoundingClientRect(); const cs = window.getComputedStyle(el); const props = ['background-color','color','font-size','font-family','border','padding','margin','width','height','display','position','z-index','opacity']; const cssRelevante = props.map((p) => `${p}: ${cs.getPropertyValue(p)}`).join('\n'); const gs = window.GameState || {}; lupaTooltip.textContent = ['─── ELEMENTO ───────────────────',`TAG      ${el.tagName.toLowerCase()}`,`ID       ${el.id || '(sem id)'}`,`CLASSES  ${el.className || '(sem classes)'}`,'─── POSIÇÃO ────────────────────',`X ${Math.round(rect.left)}px   Y ${Math.round(rect.top)}px`,`W ${Math.round(rect.width)}px  H ${Math.round(rect.height)}px`,'─── CSS APLICADO ───────────────',cssRelevante,'─── JOGO ───────────────────────',`Cena atual   ${gs.cenaAtual || '-'}`,`Personagem   ${gs.nomeJogador || '-'}`,`Status       Vida:${gs.statusVida ?? '-'} San:${gs.statusSanidade ?? '-'}`,`DEV_MODE     ${window.DEV_MODE}`].join('\n'); let tx = e.clientX + 16; let ty = e.clientY + 16; if (tx + 320 > window.innerWidth) tx = e.clientX - 330; if (ty + 300 > window.innerHeight) ty = e.clientY - 310; lupaTooltip.style.left = tx + 'px'; lupaTooltip.style.top = ty + 'px'; lupaTooltip.style.display = 'block'; };
-    _lupaClick = (e) => { const el = document.elementFromPoint(e.clientX, e.clientY); if (!el || el.closest('#dev-panel')) return; lupaFixado = el; const painelFixado = document.getElementById('dev-lupa-fixado'); if (painelFixado) { painelFixado.innerHTML = `<strong>📌 FIXADO: ${el.tagName.toLowerCase()}${el.id ? '#'+el.id : ''}</strong><br><br><textarea readonly style="width:100%;height:80px;background:#111;color:#fff;font-size:10px;border:1px solid #333">${escapeHtml(el.outerHTML.substring(0, 500))}</textarea><br><button id="dev-lupa-copy" style="margin-top:4px">COPIAR HTML</button><button id="dev-lupa-destacar" style="margin-left:4px">DESTACAR</button><button id="dev-lupa-soltar" style="margin-left:4px">SOLTAR</button>`; document.getElementById('dev-lupa-copy')?.addEventListener('click', () => navigator.clipboard.writeText(el.outerHTML)); document.getElementById('dev-lupa-destacar')?.addEventListener('click', () => { el.style.outline = '2px solid #ff1744'; setTimeout(() => { el.style.outline = ''; }, 2000); }); document.getElementById('dev-lupa-soltar')?.addEventListener('click', () => { lupaFixado = null; painelFixado.innerHTML = '<em>Nenhum elemento fixado.</em>'; }); } };
+    _lupaClick = (e) => { const el = document.elementFromPoint(e.clientX, e.clientY); if (!el || el.closest('#dev-panel')) return; lupaFixado = el; if (activeTab === 'lupa') renderTab('lupa'); };
     document.addEventListener('mousemove', _lupaMouseMove); document.addEventListener('click', _lupaClick); }
   function stopLupa() { lupaAtiva = false; document.body.style.cursor = ''; if (lupaTooltip) { lupaTooltip.remove(); lupaTooltip = null; } if (lupaHighlight) { lupaHighlight.style.outline = ''; lupaHighlight = null; } if (_lupaMouseMove) document.removeEventListener('mousemove', _lupaMouseMove); if (_lupaClick) document.removeEventListener('click', _lupaClick); _lupaMouseMove = null; _lupaClick = null; }
 
