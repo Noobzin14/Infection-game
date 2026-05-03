@@ -4,12 +4,9 @@
   let keyBuffer = '';
   let panel = null;
   let activeTab = 'cena';
-  let sceneIdBadge = null;
-  let statePoll = null;
   let styleTag = null;
   let devModePatched = false;
   let loggerOriginal = null;
-  let loggerProxy = null;
   let originalFns = {};
   let devLogs = [];
   let logsPaused = false;
@@ -18,14 +15,17 @@
   let logsSearchText = '';
   let lupaAtiva = false;
   let lupaTooltip = null;
-  let lupaMouseMoveHandler = null;
-  let lupaClickHandler = null;
-  let lupaHighlightEl = null;
+  let lupaHighlight = null;
+  let lupaFixado = null;
+  let _lupaMouseMove = null;
+  let _lupaClick = null;
   let _historicoNavDev = [];
   let devGraphVisible = false;
   let devKeyHandler = null;
 
   const invCache = { loadedItems: false, loadedTraits: false, items: [], createdItems: [], traits: [], createdTraits: [], itemSort: { key: 'id', dir: 'asc' }, traitSort: { key: 'id', dir: 'asc' }, itemFilter: 'Todos', itemSearch: '', itemEditorOpen: false, traitEditorOpen: false, itemCategoryEditor: 'armas/brancas', traitTypeEditor: 'positivo', itemEditorError: '', traitEditorError: '' };
+  let sortKey = null;
+  let sortAsc = true;
 
   window.DEV_MODE = false;
   const getVar = (name) => { try { return Function(`return ${name};`)(); } catch { return undefined; } };
@@ -81,7 +81,7 @@
   const renderInventarioTab = () => {
     const inv = getVar('window.GameState.inventario') || []; const tr = getVar('window.GameState.tracos') || [];
     const items = getAllItemsFlat().filter((x) => (invCache.itemFilter === 'Todos' || x.__macro === invCache.itemFilter) && (!invCache.itemSearch || (x.nome || '').toLowerCase().includes(invCache.itemSearch.toLowerCase())));
-    items.sort((a, b) => { const k = invCache.itemSort.key; const aa = String(a[k] ?? ''), bb = String(b[k] ?? ''); return invCache.itemSort.dir === 'asc' ? aa.localeCompare(bb) : bb.localeCompare(aa); });
+    items.sort((a, b) => { const k = sortKey || invCache.itemSort.key; const aa = String(a[k] ?? ''), bb = String(b[k] ?? ''); return (sortKey ? sortAsc : invCache.itemSort.dir === 'asc') ? aa.localeCompare(bb) : bb.localeCompare(aa); });
     const rows = items.map((it, idx) => { const inInv = inv.includes(it.id) || inv.includes(it.nome); return `<tr class="${idx % 2 ? 'odd' : 'even'} ${inInv ? 'in-inv' : ''}"><td><button data-add-item-grid="${escapeHtml(it.id)}">➕</button></td><td>${escapeHtml(it.id)}</td><td>${escapeHtml(it.nome)}</td><td>${escapeHtml(it.__macro)}</td><td>${escapeHtml(it.dano ? `${it.dano.min}-${it.dano.max}` : (it.defesa ?? '-'))}</td><td>${escapeHtml(it.peso ?? '-')}</td><td>${escapeHtml(it.raridade ?? '-')}</td></tr>`; }).join('');
     const traits = getAllTraitsFlat().sort((a,b)=> String(a.id).localeCompare(String(b.id)));
     const trows = traits.map((t, idx) => `<tr class="${idx % 2 ? 'odd' : 'even'} ${(tr || []).includes(t.id) ? 'in-inv' : ''}"><td><button data-add-trait-grid="${escapeHtml(t.id)}">➕</button></td><td>${escapeHtml(t.id)}</td><td>${escapeHtml(t.nome)}</td><td style="color:${t.tipo==='Positivo'?'#66bb6a':'#e57373'}">${t.tipo}</td><td>${escapeHtml(formatDados(t.efeito))}</td><td>${escapeHtml(t.como_revelar || '-')}</td></tr>`).join('');
@@ -110,7 +110,7 @@
     body.querySelectorAll('.dev-log-item').forEach((el) => el.onclick = () => { const pre = el.querySelector('pre'); pre.style.display = pre.style.display === 'none' ? 'block' : 'none'; });
   };
 
-  const addLogToPanel = (entry) => { devLogs.unshift({ ...entry, id: Date.now() + Math.random() }); devLogs = devLogs.slice(0, 500); if (activeTab === 'logs') updateLogsTabUI(); else updateLogsCounterLabel(); };
+  const addLogToPanel = (entry) => { if (logsPaused) return; devLogs.unshift({ ...entry, id: Date.now() + Math.random() }); devLogs = devLogs.slice(0, 500); if (activeTab === 'logs') updateLogsTabUI(); else updateLogsCounterLabel(); };
   const addEventToPanel = (msg) => addLogToPanel({ timestamp: new Date().toISOString(), nivel: 'EVENTO', categoria: 'JOGO', mensagem: msg, dados: null });
 
   const applyDevPatches = () => {
@@ -159,6 +159,7 @@
     if (tab === 'inventario') { await fetchCaches(); c.innerHTML = renderInventarioTab(); }
     else if (tab === 'cena') c.innerHTML = renderCenaTab();
     else if (tab === 'logs') c.innerHTML = renderLogsTab();
+    else if (tab === 'lupa') c.innerHTML = `<div><button id="dev-lupa-toggle">${lupaAtiva ? '🔍 Desativar Lupa' : '🔍 Ativar Lupa'}</button><div id="dev-lupa-fixado" style="margin-top:8px">${lupaFixado ? 'Elemento fixado.' : '<em>Nenhum elemento fixado.</em>'}</div></div>`;
     else c.innerHTML = '<div>Conteúdo mantido.</div>';
     bindTabEvents(); if (tab === 'logs') updateLogsTabUI();
   };
@@ -170,6 +171,8 @@
     q('#dev-scene-back')?.addEventListener('click', goBackScene);
     q('#dev-scene-back-clear')?.addEventListener('click', () => { _historicoNavDev = []; renderTab('cena'); });
     q('#dev-toggle-graph')?.addEventListener('click', () => { devGraphVisible = !devGraphVisible; renderTab('cena'); });
+    const btnAplicar = q('#dev-apply-text'); const textareaCena = q('#dev-scene-text');
+    if (btnAplicar && textareaCena) btnAplicar.addEventListener('click', () => { const cenaAtual = getVar('window.GameState.cenaAtual'); const cenas = getVar('window.GameState.cenas'); if (!cenaAtual || !cenas || !cenas[cenaAtual]) return; cenas[cenaAtual].texto = textareaCena.value; if (typeof renderCena === 'function') renderCena(cenaAtual); });
     qa('.dev-node').forEach((n) => n.onclick = () => { const id = n.dataset.nodeId; if ((getVar('window.GameState.cenas') || {})[id]) callFn('renderCena', id); });
 
     q('#dev-logs-cat')?.addEventListener('change', (e) => { logsCategoryFilter = e.target.value; updateLogsTabUI(); });
@@ -177,19 +180,37 @@
     q('#dev-logs-search-clear')?.addEventListener('click', () => { logsSearchText = ''; q('#dev-logs-search').value = ''; updateLogsTabUI(); });
     q('#dev-logs-clear')?.addEventListener('click', () => { devLogs = []; updateLogsTabUI(); });
     qa('.dev-log-level').forEach((b) => { b.onclick = () => { logsLevelFilter = b.dataset.level; updateLogsTabUI(); }; });
+    const btnPausar = q('#dev-logs-pause');
+    if (btnPausar) btnPausar.addEventListener('click', () => { logsPaused = !logsPaused; btnPausar.textContent = logsPaused ? '▶️ RETOMAR' : '⏸️ PAUSAR'; btnPausar.style.opacity = logsPaused ? '0.5' : '1'; });
+    const btnExportar = q('#dev-logs-export');
+    if (btnExportar) btnExportar.addEventListener('click', () => { if (typeof Logger !== 'undefined' && Logger.exportar) Logger.exportar(); });
 
     q('#dev-item-filter')?.addEventListener('change', (e) => { invCache.itemFilter = e.target.value; renderTab('inventario'); });
     q('#dev-item-search')?.addEventListener('input', (e) => { invCache.itemSearch = e.target.value; renderTab('inventario'); });
     q('#dev-item-create-toggle')?.addEventListener('click', () => { invCache.itemEditorOpen = !invCache.itemEditorOpen; invCache.itemEditorError = ''; renderTab('inventario'); });
     q('#dev-export-items')?.addEventListener('click', () => downloadJson(getAllItemsFlat(), 'items-export.json'));
     qa('[data-add-item-grid]').forEach((b) => b.onclick = () => { const id = b.dataset.addItemGrid; const inv = getVar('window.GameState.inventario') || []; if (inv.length < 5) { inv.push(id); callFn('atualizarStatus'); renderTab('inventario'); } });
+    qa('[data-rm-item]').forEach((btn) => btn.addEventListener('click', () => { const idx = parseInt(btn.dataset.rmItem); if (window.GameState?.inventario) { window.GameState.inventario.splice(idx, 1); if (typeof atualizarStatus === 'function') atualizarStatus(); renderTab('inventario'); } }));
+    const btnLimpar = q('#dev-clear-items');
+    if (btnLimpar) btnLimpar.addEventListener('click', () => { if (window.GameState?.inventario) { window.GameState.inventario.length = 0; if (typeof atualizarStatus === 'function') atualizarStatus(); renderTab('inventario'); } });
+    qa('[data-rm-traco]').forEach((btn) => btn.addEventListener('click', () => { const id = btn.dataset.rmTraco; if (window.GameState?.tracos) { const idx = window.GameState.tracos.indexOf(id); if (idx > -1) window.GameState.tracos.splice(idx, 1); renderTab('inventario'); } }));
+    qa('[data-sort]').forEach((th) => { th.style.cursor = 'pointer'; th.addEventListener('click', () => { const key = th.dataset.sort; if (sortKey === key) sortAsc = !sortAsc; else { sortKey = key; sortAsc = true; } renderTab('inventario'); }); });
     q('#dev-item-validate')?.addEventListener('click', () => { const text = q('#dev-item-json').value; const cat = q('#dev-item-cat-editor').value; const valid = validateItem(text, cat); if (valid.ok) { invCache.createdItems.push(valid.item); invCache.itemEditorError = ''; showToast('✅ Item criado'); renderTab('inventario'); } else { invCache.itemEditorError = `❌ ${valid.error}`; q('#dev-item-json').style.border = '1px solid #8b0000'; } });
 
     q('#dev-trait-create-toggle')?.addEventListener('click', () => { invCache.traitEditorOpen = !invCache.traitEditorOpen; invCache.traitEditorError = ''; renderTab('inventario'); });
     q('#dev-export-traits')?.addEventListener('click', () => downloadJson(getAllTraitsFlat(), 'tracos-export.json'));
     qa('[data-add-trait-grid]').forEach((b) => b.onclick = () => { const id = b.dataset.addTraitGrid; const t = getVar('window.GameState.tracos') || []; if (!t.includes(id)) t.push(id); renderTab('inventario'); });
     q('#dev-trait-validate')?.addEventListener('click', () => { const valid = validateTrait(q('#dev-trait-json').value, q('#dev-trait-type-editor').value); if (valid.ok) { invCache.createdTraits.push(valid.trait); invCache.traitEditorError = ''; showToast('✅ Traço criado'); renderTab('inventario'); } else { invCache.traitEditorError = `❌ ${valid.error}`; } });
+    const toggleLupa = q('#dev-lupa-toggle');
+    if (toggleLupa) toggleLupa.addEventListener('click', () => { if (lupaAtiva) stopLupa(); else startLupa(); toggleLupa.textContent = lupaAtiva ? '🔍 Desativar Lupa' : '🔍 Ativar Lupa'; const abaLupa = document.querySelector('[data-tab="lupa"]'); if (abaLupa) abaLupa.textContent = lupaAtiva ? 'LUPA 🟢' : 'LUPA ⚫'; });
   }
+
+
+  function startLupa() { lupaAtiva = true; document.body.style.cursor = 'crosshair'; lupaTooltip = document.createElement('div'); lupaTooltip.id = 'dev-lupa-tooltip'; lupaTooltip.style.cssText = 'position: fixed; z-index: 99999; pointer-events: none; background: rgba(10,10,10,0.97); border: 1px solid #8b0000; color: #fff; font-family: monospace; font-size: 11px; padding: 8px; max-width: 320px; white-space: pre; display: none;'; document.body.appendChild(lupaTooltip);
+    _lupaMouseMove = (e) => { const el = document.elementFromPoint(e.clientX, e.clientY); if (!el || el.closest('#dev-panel') || el.id === 'dev-lupa-tooltip') { lupaTooltip.style.display = 'none'; return; } if (lupaHighlight && lupaHighlight !== el) lupaHighlight.style.outline = ''; lupaHighlight = el; el.style.outline = '1px dashed rgba(139,0,0,0.7)'; const rect = el.getBoundingClientRect(); const cs = window.getComputedStyle(el); const props = ['background-color','color','font-size','font-family','border','padding','margin','width','height','display','position','z-index','opacity']; const cssRelevante = props.map((p) => `${p}: ${cs.getPropertyValue(p)}`).join('\n'); const gs = window.GameState || {}; lupaTooltip.textContent = ['─── ELEMENTO ───────────────────',`TAG      ${el.tagName.toLowerCase()}`,`ID       ${el.id || '(sem id)'}`,`CLASSES  ${el.className || '(sem classes)'}`,'─── POSIÇÃO ────────────────────',`X ${Math.round(rect.left)}px   Y ${Math.round(rect.top)}px`,`W ${Math.round(rect.width)}px  H ${Math.round(rect.height)}px`,'─── CSS APLICADO ───────────────',cssRelevante,'─── JOGO ───────────────────────',`Cena atual   ${gs.cenaAtual || '-'}`,`Personagem   ${gs.nomeJogador || '-'}`,`Status       Vida:${gs.statusVida ?? '-'} San:${gs.statusSanidade ?? '-'}`,`DEV_MODE     ${window.DEV_MODE}`].join('\n'); let tx = e.clientX + 16; let ty = e.clientY + 16; if (tx + 320 > window.innerWidth) tx = e.clientX - 330; if (ty + 300 > window.innerHeight) ty = e.clientY - 310; lupaTooltip.style.left = tx + 'px'; lupaTooltip.style.top = ty + 'px'; lupaTooltip.style.display = 'block'; };
+    _lupaClick = (e) => { const el = document.elementFromPoint(e.clientX, e.clientY); if (!el || el.closest('#dev-panel')) return; lupaFixado = el; const painelFixado = document.getElementById('dev-lupa-fixado'); if (painelFixado) { painelFixado.innerHTML = `<strong>📌 FIXADO: ${el.tagName.toLowerCase()}${el.id ? '#'+el.id : ''}</strong><br><br><textarea readonly style="width:100%;height:80px;background:#111;color:#fff;font-size:10px;border:1px solid #333">${escapeHtml(el.outerHTML.substring(0, 500))}</textarea><br><button id="dev-lupa-copy" style="margin-top:4px">COPIAR HTML</button><button id="dev-lupa-destacar" style="margin-left:4px">DESTACAR</button><button id="dev-lupa-soltar" style="margin-left:4px">SOLTAR</button>`; document.getElementById('dev-lupa-copy')?.addEventListener('click', () => navigator.clipboard.writeText(el.outerHTML)); document.getElementById('dev-lupa-destacar')?.addEventListener('click', () => { el.style.outline = '2px solid #ff1744'; setTimeout(() => { el.style.outline = ''; }, 2000); }); document.getElementById('dev-lupa-soltar')?.addEventListener('click', () => { lupaFixado = null; painelFixado.innerHTML = '<em>Nenhum elemento fixado.</em>'; }); } };
+    document.addEventListener('mousemove', _lupaMouseMove); document.addEventListener('click', _lupaClick); }
+  function stopLupa() { lupaAtiva = false; document.body.style.cursor = ''; if (lupaTooltip) { lupaTooltip.remove(); lupaTooltip = null; } if (lupaHighlight) { lupaHighlight.style.outline = ''; lupaHighlight = null; } if (_lupaMouseMove) document.removeEventListener('mousemove', _lupaMouseMove); if (_lupaClick) document.removeEventListener('click', _lupaClick); _lupaMouseMove = null; _lupaClick = null; }
 
   const validateItem = (txt, cat) => {
     let it; try { it = JSON.parse(txt); } catch { return { ok: false, error: 'JSON inválido' }; }
@@ -209,7 +230,18 @@
 
   const ensureStyles = () => { if (styleTag) return; styleTag = document.createElement('style'); styleTag.textContent = `#dev-panel{position:fixed;left:20px;top:20px;width:860px;height:620px;z-index:9999;background:rgba(10,10,10,.95);border:1px solid #8b0000;color:#fff;font-family:monospace}.dev-header{display:flex;justify-content:space-between;padding:8px;background:#111;cursor:move}.dev-tabs{display:flex;gap:4px;padding:6px;flex-wrap:wrap}.dev-tab.active{background:#8b0000;color:#fff}.dev-content{padding:8px}.dev-logs-list{max-height:360px;overflow:auto}.dev-log-item{font-size:11px;border-bottom:1px solid #222;padding:4px;cursor:pointer}.dev-graph-scroll{max-height:340px;max-width:100%;overflow:auto;border:1px solid #333;margin-top:6px}.dev-grid{max-height:300px;overflow:auto;border:1px solid #333}table{width:100%;border-collapse:collapse}th,td{border:1px solid #333;padding:4px;font-size:12px}thead th{position:sticky;top:0;background:#111}.odd{background:#151515}.in-inv{background:rgba(46,125,50,.25)}.dev-error{color:#e57373;margin-top:6px}.dev-toast{position:fixed;top:20px;right:20px;z-index:10000;background:rgba(10,10,10,.95);border:1px solid #8b0000;color:#fff;padding:8px 12px;border-radius:6px}`; document.head.appendChild(styleTag); };
 
-  const buildPanel = () => { if (panel && document.body.contains(panel)) return panel; panel = document.createElement('div'); panel.id = 'dev-panel'; panel.innerHTML = `<div class="dev-header"><span>⚙️ DEV MODE</span><button id="dev-hide">X</button></div><div class="dev-tabs"></div><div class="dev-content"></div>`; document.body.appendChild(panel); [['cena','CENA'],['status','STATUS'],['inventario','INVENTÁRIO'],['design','DESIGN'],['repo','REPO'],['logs','LOGS'],['lupa','LUPA ⚫']].forEach(([id, label]) => { const b = document.createElement('button'); b.className='dev-tab'; b.dataset.tab=id; b.textContent=label; b.onclick = () => renderTab(id); panel.querySelector('.dev-tabs').appendChild(b); }); panel.querySelector('#dev-hide').onclick = () => panel.style.display = 'none'; renderTab(activeTab); return panel; };
+  const buildPanel = () => { if (panel && document.body.contains(panel)) return panel; panel = document.createElement('div'); panel.id = 'dev-panel'; panel.innerHTML = `<div id="dev-header" class="dev-header"><span>⚙️ DEV MODE</span><button id="dev-hide">X</button></div><div class="dev-tabs"></div><div class="dev-content"></div>`; document.body.appendChild(panel); [['cena','CENA'],['status','STATUS'],['inventario','INVENTÁRIO'],['design','DESIGN'],['repo','REPO'],['logs','LOGS'],['lupa','LUPA ⚫']].forEach(([id, label]) => { const b = document.createElement('button'); b.className='dev-tab'; b.dataset.tab=id; b.textContent=label; b.onclick = () => renderTab(id); panel.querySelector('.dev-tabs').appendChild(b); }); panel.querySelector('#dev-hide').onclick = () => panel.style.display = 'none';
+    const header = document.getElementById('dev-header'); let isDragging = false; let dragOffsetX = 0; let dragOffsetY = 0;
+    header.addEventListener('mousedown', (e) => { isDragging = true; dragOffsetX = e.clientX - panel.offsetLeft; dragOffsetY = e.clientY - panel.offsetTop; e.preventDefault(); });
+    const onMouseMove = (e) => { if (!isDragging) return; const x = Math.max(0, Math.min(window.innerWidth - panel.offsetWidth, e.clientX - dragOffsetX)); const y = Math.max(0, Math.min(window.innerHeight - panel.offsetHeight, e.clientY - dragOffsetY)); panel.style.left = x + 'px'; panel.style.top = y + 'px'; };
+    const onMouseUp = () => { isDragging = false; };
+    document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp);
+    header.addEventListener('touchstart', (e) => { const touch = e.touches[0]; isDragging = true; dragOffsetX = touch.clientX - panel.offsetLeft; dragOffsetY = touch.clientY - panel.offsetTop; });
+    const onTouchMove = (e) => { if (!isDragging) return; const touch = e.touches[0]; const x = Math.max(0, Math.min(window.innerWidth - panel.offsetWidth, touch.clientX - dragOffsetX)); const y = Math.max(0, Math.min(window.innerHeight - panel.offsetHeight, touch.clientY - dragOffsetY)); panel.style.left = x + 'px'; panel.style.top = y + 'px'; e.preventDefault(); };
+    const onTouchEnd = () => { isDragging = false; };
+    document.addEventListener('touchmove', onTouchMove, { passive: false }); document.addEventListener('touchend', onTouchEnd);
+    panel._cleanupDrag = () => { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); document.removeEventListener('touchmove', onTouchMove); document.removeEventListener('touchend', onTouchEnd); };
+    renderTab(activeTab); return panel; };
 
   document.addEventListener('keydown', (e) => {
     keyBuffer = (keyBuffer + String(e.key || '').toLowerCase()).slice(-BUFFER_SIZE);
@@ -217,6 +249,6 @@
     keyBuffer = '';
     window.DEV_MODE = !window.DEV_MODE;
     if (window.DEV_MODE) { ensureStyles(); buildPanel(); applyDevPatches(); setupDevShortcuts(); showToast('⚙️ Modo Dev ativado'); }
-    else { panel?.remove(); revertDevPatches(); showToast('⚙️ Modo Dev desativado'); }
+    else { stopLupa(); panel?._cleanupDrag?.(); panel?.remove(); revertDevPatches(); showToast('⚙️ Modo Dev desativado'); }
   });
 })();
