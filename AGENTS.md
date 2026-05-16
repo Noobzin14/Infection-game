@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Escopo
-Estas instruções se aplicam ao diretório `insect-apocalypse-vn/` e subdiretórios.
+Estas instruções se aplicam ao diretório `Infection-game/` e subdiretórios.
 
 ## Objetivo
 - Manter a estrutura de visual novel sobre apocalipse de insetos.
