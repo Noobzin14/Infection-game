@@ -9,6 +9,7 @@ Object.assign(window.GameState, {
   inventario: [],
   historicoSessao: [],
   velocidadeTexto: 30,
+  capituloAtual: 1,
   atributos: {
     forca: 5,
     resistencia: 5,
@@ -80,9 +81,14 @@ function recalcularStatusMaximos() {
 }
 
 function avancarCena(escolha, textoEscolha) {
-  const podeAvancar = aplicarEfeitos(escolha.efeito);
-  if (!podeAvancar) {
+  const resultadoEfeitos = aplicarEfeitos(escolha.efeito);
+  if (resultadoEfeitos === 'INVENTARIO_CHEIO') {
     registrarHistorico(`Escolha bloqueada por inventário cheio: ${textoEscolha || 'Sem texto'}`);
+    return;
+  }
+
+  if (resultadoEfeitos === 'COLAPSO_MENTAL') {
+    registrarHistorico('Colapso mental: fim de jogo.');
     return;
   }
 
@@ -162,23 +168,29 @@ function aplicarEfeitos(efeito = {}) {
 
   if (typeof efeito.sanidade === 'number') {
     window.GameState.statusSanidade = Math.max(0, window.GameState.statusSanidade + efeito.sanidade);
+
+    if (window.GameState.statusSanidade <= 0) {
+      atualizarStatus();
+      renderCena('colapso_mental');
+      return 'COLAPSO_MENTAL';
+    }
   }
 
   if (efeito.inventario) {
     if (Array.isArray(efeito.inventario)) {
       for (const item of efeito.inventario) {
         if (!adicionarItemInventario(item)) {
-          return false;
+          return 'INVENTARIO_CHEIO';
         }
       }
     } else if (!adicionarItemInventario(efeito.inventario)) {
-      return false;
+      return 'INVENTARIO_CHEIO';
     }
   }
 
   recalcularStatusMaximos();
   atualizarStatus();
-  return true;
+  return 'OK';
 }
 
 function adicionarItemInventario(item) {
@@ -195,7 +207,7 @@ function adicionarItemInventario(item) {
 
   window.GameState.inventario.push(item);
   registrarHistorico(`Item obtido: ${item}`);
-  return true;
+  return 'OK';
 }
 
 function limparDigitacao() {
@@ -264,6 +276,50 @@ function criarBotaoRecomecar() {
   elementos.escolhasContainer.appendChild(botao);
 }
 
+
+function mapearOpcaoNarrativaParaEscolha(opcao = {}) {
+  const efeito = {};
+
+  if (opcao.atributos && typeof opcao.atributos === 'object') {
+    efeito.atributos = opcao.atributos;
+  }
+
+  if (opcao.modificadores && typeof opcao.modificadores === 'object') {
+    efeito.modificadores = opcao.modificadores;
+  }
+
+  if (typeof opcao.traco_inicial === 'string' && opcao.traco_inicial.trim()) {
+    efeito.traco = opcao.traco_inicial;
+  }
+
+  return {
+    texto: opcao.texto,
+    proxima: opcao.proxima,
+    efeito
+  };
+}
+
+function resolverCenaCriacaoDinamica(cena) {
+  if (!cena || cena.tipo !== 'criacao') {
+    return cena;
+  }
+
+  const perguntas = Array.isArray(configuracaoPersonagem.perguntas_narrativas)
+    ? configuracaoPersonagem.perguntas_narrativas
+    : [];
+
+  const pergunta = perguntas.find((item) => item.cena_id === cena.id);
+  if (!pergunta) {
+    return cena;
+  }
+
+  return {
+    ...cena,
+    texto: pergunta.narrativa || cena.texto,
+    escolhas: (pergunta.opcoes || []).map(mapearOpcaoNarrativaParaEscolha)
+  };
+}
+
 function renderCena(id) {
   const cena = window.GameState.cenas[id];
   window.GameState.cenaAtual = id;
@@ -282,13 +338,21 @@ function renderCena(id) {
     return;
   }
 
-  const nomeExibicao = cena.personagem || window.GameState.nomeJogador;
+  const cenaRenderizavel = resolverCenaCriacaoDinamica(cena);
+
+  if (cenaRenderizavel.tipo === 'criacao') {
+    elementos.telaJogo.classList.add('modo-criacao');
+  } else {
+    elementos.telaJogo.classList.remove('modo-criacao');
+  }
+
+  const nomeExibicao = cenaRenderizavel.personagem || window.GameState.nomeJogador;
   elementos.nomePersonagem.textContent = nomeExibicao;
 
-  aplicarClasseBackground(cena.background);
+  aplicarClasseBackground(cenaRenderizavel.background);
 
-  const textoCena = typeof cena.texto === 'string' ? cena.texto : cena.text;
-  const escolhasCena = Array.isArray(cena.escolhas) ? cena.escolhas : cena.choices;
+  const textoCena = typeof cenaRenderizavel.texto === 'string' ? cenaRenderizavel.texto : cenaRenderizavel.text;
+  const escolhasCena = Array.isArray(cenaRenderizavel.escolhas) ? cenaRenderizavel.escolhas : cenaRenderizavel.choices;
 
   mostrarTextoGradual(textoCena || '', () => {
     Logger.info('CENA', 'Cena renderizada com sucesso.', {
@@ -297,18 +361,19 @@ function renderCena(id) {
       totalEscolhas: (escolhasCena || []).length
     });
 
-    renderEscolhas(cena);
+    renderEscolhas(cenaRenderizavel);
   });
 }
 
-async function carregarCapitulo() {
+async function carregarCapitulo(numero = 1) {
   try {
-    const resposta = await fetch('story/chapter1.json');
+    const resposta = await fetch(`story/chapter${numero}.json`);
     if (!resposta.ok) {
       throw new Error(`Falha HTTP ${resposta.status}`);
     }
 
     const dados = await resposta.json();
+    window.GameState.capituloAtual = numero;
     window.GameState.cenas = {};
     for (const cena of dados.cenas || []) {
       window.GameState.cenas[cena.id] = cena;
@@ -320,12 +385,12 @@ async function carregarCapitulo() {
     }
 
     atualizarStatus();
-    registrarHistorico(`Capítulo carregado: ${dados.title || 'Sem título'}`);
+    registrarHistorico(`Capítulo ${numero} carregado: ${dados.titulo || dados.title || 'Sem título'}`);
     alternarTela(elementos.telaJogo);
     renderCena(primeiraCena);
   } catch (erro) {
     Logger.fatal('REDE', 'Falha ao carregar JSON do capítulo.', {
-      arquivo: 'story/chapter1.json',
+      arquivo: `story/chapter${numero}.json`,
       erro: erro.message
     });
     elementos.erroNome.textContent = `Erro ao carregar capítulo: ${erro.message}`;
@@ -369,7 +434,7 @@ elementos.btnConfirmar.addEventListener('click', async () => {
   elementos.erroNome.textContent = '';
   window.GameState.nomeJogador = nomeDigitado;
   await carregarConfiguracaoPersonagem();
-  await carregarCapitulo();
+  await carregarCapitulo(window.GameState.capituloAtual || 1);
 });
 
 elementos.inputNome.addEventListener('keydown', (evento) => {

@@ -6,129 +6,23 @@
       "id": "criacao_01",
       "background": "bunker_escuro",
       "personagem": null,
-      "texto": "Escuridão.\n\nSeus pulmões puxam ar pesado, abafado. Cheira a metal e terra molhada.\n\nVocê está vivo. Por enquanto.\n\nSeus braços doem. Você tenta se lembrar — antes de tudo isso, como era seu corpo?",
+      "texto": "Escuridão.\n\nSeus pulmões puxam ar pesado, abafado. Cheira a metal e terra molhada.\n\nVocê está vivo. Por enquanto.",
       "tipo": "criacao",
-      "atributo_base": true,
-      "escolhas": [
-        {
-          "texto": "Trabalhava com as mãos. Construção, campo.",
-          "proxima": "criacao_02",
-          "efeito": {
-            "atributos": {
-              "forca": 7,
-              "resistencia": 6,
-              "agilidade": 4,
-              "percepcao": 4,
-              "mente": 4
-            }
-          }
-        },
-        {
-          "texto": "Trabalho de escritório. Sedentário.",
-          "proxima": "criacao_02",
-          "efeito": {
-            "atributos": {
-              "forca": 4,
-              "resistencia": 4,
-              "agilidade": 4,
-              "percepcao": 6,
-              "mente": 7
-            }
-          }
-        },
-        {
-          "texto": "Me exercitava. Corria, academia.",
-          "proxima": "criacao_02",
-          "efeito": {
-            "atributos": {
-              "forca": 5,
-              "resistencia": 7,
-              "agilidade": 7,
-              "percepcao": 4,
-              "mente": 4
-            }
-          }
-        }
-      ]
+      "atributo_base": true
     },
     {
       "id": "criacao_02",
       "background": "bunker_escuro",
       "personagem": null,
-      "texto": "Um barulho vem de fora. Pesado. Rítmico.\n\nSeu corpo reage antes da sua mente processar.\n\nSeu instinto imediato é...",
-      "tipo": "criacao",
-      "escolhas": [
-        {
-          "texto": "Me mover rápido. Sair da linha de perigo.",
-          "proxima": "criacao_03",
-          "efeito": {
-            "modificadores": {
-              "agilidade": 2,
-              "percepcao": 1
-            }
-          }
-        },
-        {
-          "texto": "Ficar quieto. Observar antes de agir.",
-          "proxima": "criacao_03",
-          "efeito": {
-            "modificadores": {
-              "percepcao": 3,
-              "mente": 1
-            }
-          }
-        },
-        {
-          "texto": "Pegar o que tiver na mão e me preparar.",
-          "proxima": "criacao_03",
-          "efeito": {
-            "modificadores": {
-              "forca": 2,
-              "resistencia": 1
-            }
-          }
-        }
-      ]
+      "texto": "Um barulho vem de fora. Pesado. Rítmico.\n\nSeu corpo reage antes da sua mente processar.",
+      "tipo": "criacao"
     },
     {
       "id": "criacao_03",
       "background": "bunker_escuro",
       "personagem": null,
-      "texto": "O barulho some.\n\nVocê prende a respiração por mais alguns segundos.\n\nSilêncio.\n\nVocê tenta se lembrar de como chegou aqui. As memórias são...",
-      "tipo": "criacao",
-      "escolhas": [
-        {
-          "texto": "Claras. Lembro de tudo — a fuga, o bunker, o cheiro.",
-          "proxima": "intro_01",
-          "efeito": {
-            "modificadores": {
-              "mente": 3
-            },
-            "traco": "memoria_intacta",
-            "sanidade": -10
-          }
-        },
-        {
-          "texto": "Fragmentadas. Flashes de luz, gritos, correria.",
-          "proxima": "intro_01",
-          "efeito": {
-            "modificadores": {
-              "mente": 1,
-              "percepcao": 1
-            }
-          }
-        },
-        {
-          "texto": "Um vazio completo. Nada antes desse momento.",
-          "proxima": "intro_01",
-          "efeito": {
-            "modificadores": {
-              "mente": -2
-            },
-            "traco": "instinto_puro"
-          }
-        }
-      ]
+      "texto": "O barulho some.\n\nVocê prende a respiração por mais alguns segundos.\n\nSilêncio.",
+      "tipo": "criacao"
     },
     {
       "id": "intro_01",
@@ -212,6 +106,24 @@
       ]
     },
     {
+      "id": "radio_check",
+      "background": "bunker_dia",
+      "personagem": null,
+      "texto": "Você gira botões, bate na carcaça e ajusta a antena torta.\n\nSó chiado. Nenhuma voz humana. Nenhum pedido de socorro.\n\nPor um instante, você percebe que talvez não haja ninguém para ouvir do outro lado.",
+      "escolhas": [
+        {
+          "texto": "Aceitar o silêncio e continuar",
+          "proxima": "exploracao_01",
+          "efeito": {
+            "sanidade": -5,
+            "inventario": [
+              "Rádio Quebrado"
+            ]
+          }
+        }
+      ]
+    },
+    {
       "id": "item_mochila",
       "background": "bunker_dia",
       "personagem": null,
@@ -243,6 +155,18 @@
         {
           "texto": "Recuar imediatamente",
           "proxima": "exploracao_01"
+        }
+      ]
+    },
+    {
+      "id": "colapso_mental",
+      "background": "bunker_escuro",
+      "personagem": null,
+      "texto": "Sua mente cede ao peso do medo e do isolamento.\n\nAs vozes no escuro ficam mais altas que a realidade.\n\nVocê não consegue mais distinguir ameaça de lembrança.\n\nFim de jogo.",
+      "escolhas": [
+        {
+          "texto": "Reiniciar",
+          "proxima": "criacao_01"
         }
       ]
     }

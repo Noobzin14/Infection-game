@@ -1,6 +1,5 @@
 {
   "_instrucoes": "Este arquivo é a memória compartilhada do projeto. Cole o conteúdo em qualquer sessão do Claude para restaurar contexto completo. O Codex deve ler este arquivo antes de qualquer tarefa.",
-
   "projeto": {
     "nome": "Infection Game",
     "repositorio": "github.com/Noobzin14/Infection-game",
@@ -8,7 +7,6 @@
     "engine": "HTML/JS/CSS puro (sem frameworks)",
     "status": "Em desenvolvimento — estrutura base criada"
   },
-
   "lore": {
     "titulo_universo": "Protocolo Amazônia",
     "origem_apocalipse": "Em 2031, o consórcio científico internacional liberou o Agente BIO-7 na bacia amazônica — um fungo modificado geneticamente para absorver CO₂ em escala industrial e combater o aquecimento global. Funcionou por 8 meses. Então insetos expostos ao fungo apresentaram crescimento celular descontrolado. Em 14 meses, espécimes de 2 metros eram avistados. Em 18 meses, a civilização no norte do Brasil havia colapsado.",
@@ -16,35 +14,58 @@
     "ano_aproximado": 2033,
     "tom": "Survival horror, pesado, realista, sem heroísmo fácil"
   },
-
   "protagonista": {
     "nome": "Definido pelo jogador",
     "genero": "Masculino",
     "situacao_inicial": "Acorda sozinho num bunker no Amazonas sem memória clara do que aconteceu",
     "motivacao": "Sobreviver"
   },
-
   "mecanicas": {
     "sistema_atributos": {
       "descricao": "Inspirado em Project Zomboid",
-      "atributos": ["Força", "Agilidade", "Resistência", "Percepção", "Mente"],
+      "atributos": [
+        "Força",
+        "Agilidade",
+        "Resistência",
+        "Percepção",
+        "Mente"
+      ],
       "escala": "1 a 10",
-      "status": "A implementar"
+      "status": "Implementado"
     },
     "sistema_tracos": {
       "descricao": "Traços positivos e negativos escolhidos na criação do personagem",
-      "exemplos_positivos": ["Atleta", "Mecânico", "Botânico", "Ex-militar", "Caçador"],
-      "exemplos_negativos": ["Fobia de insetos (-Sanidade em combate)", "Lento", "Fraco"],
-      "status": "A implementar"
+      "exemplos_positivos": [
+        "Atleta",
+        "Mecânico",
+        "Botânico",
+        "Ex-militar",
+        "Caçador"
+      ],
+      "exemplos_negativos": [
+        "Fobia de insetos (-Sanidade em combate)",
+        "Lento",
+        "Fraco"
+      ],
+      "status": "Implementado"
     },
     "sistema_personalidade": {
-      "tipos": ["Pragmático", "Empático", "Instável"],
+      "tipos": [
+        "Pragmático",
+        "Empático",
+        "Instável"
+      ],
       "efeito": "Afeta diálogos e escolhas disponíveis",
       "status": "A implementar"
     },
     "sistema_combate": {
       "descricao": "Inspirado em Fear and Hunger — turnos, partes do corpo, risco alto",
-      "acoes": ["Atacar parte do corpo", "Usar item", "Fugir", "Examinar inimigo"],
+      "acoes": [
+        "Atacar parte do corpo",
+        "Usar item",
+        "Fugir",
+        "Examinar inimigo"
+      ],
       "sistema_membros": {
         "descricao": "Insetos têm partes destruíveis que afetam comportamento",
         "exemplos": [
@@ -61,14 +82,17 @@
     },
     "sistema_inventario": {
       "capacidade_maxima": 5,
-      "status": "A implementar"
+      "status": "Implementado"
     },
     "sistema_status": {
-      "campos": ["Vida", "Sanidade", "Inventário"],
-      "status": "A implementar"
+      "campos": [
+        "Vida",
+        "Sanidade",
+        "Inventário"
+      ],
+      "status": "Implementado"
     }
   },
-
   "bestiario": [
     {
       "nome": "Barata Americana",
@@ -77,7 +101,10 @@
       "agilidade": "Média",
       "velocidade": "Alta",
       "especial": "Foge se HP abaixo de 30%",
-      "fraquezas": ["Fogo", "Esmagamento"]
+      "fraquezas": [
+        "Fogo",
+        "Esmagamento"
+      ]
     },
     {
       "nome": "Barata d'Água",
@@ -86,7 +113,10 @@
       "agilidade": "Média",
       "velocidade": "Alta",
       "especial": "Resistente a corte",
-      "fraquezas": ["Eletricidade", "Esmagamento"]
+      "fraquezas": [
+        "Eletricidade",
+        "Esmagamento"
+      ]
     },
     {
       "nome": "Formiga Tocandira",
@@ -95,7 +125,10 @@
       "agilidade": "Alta",
       "velocidade": "Média",
       "especial": "Veneno — causa dano por turno",
-      "fraquezas": ["Fogo", "Corte"]
+      "fraquezas": [
+        "Fogo",
+        "Corte"
+      ]
     },
     {
       "nome": "Cupim Soldado",
@@ -104,7 +137,10 @@
       "agilidade": "Baixa",
       "velocidade": "Baixa",
       "especial": "Chama reforços se não eliminado rápido",
-      "fraquezas": ["Fogo", "Veneno"]
+      "fraquezas": [
+        "Fogo",
+        "Veneno"
+      ]
     },
     {
       "nome": "Besouro Hércules",
@@ -113,7 +149,10 @@
       "agilidade": "Baixa",
       "velocidade": "Baixa",
       "especial": "Armadura natural — reduz dano físico em 50%",
-      "fraquezas": ["Eletricidade", "Fogo"]
+      "fraquezas": [
+        "Eletricidade",
+        "Fogo"
+      ]
     },
     {
       "nome": "Mariposa Gigante",
@@ -122,12 +161,19 @@
       "agilidade": "Muito Alta",
       "velocidade": "Muito Alta",
       "especial": "Cega o jogador por 2 turnos",
-      "fraquezas": ["Fogo", "Projétil"]
+      "fraquezas": [
+        "Fogo",
+        "Projétil"
+      ]
     }
   ],
-
   "roteiro": {
-    "capitulos_planejados": ["Despertar", "A Floresta", "Primeiros Sobreviventes", "O Ninho"],
+    "capitulos_planejados": [
+      "Despertar",
+      "A Floresta",
+      "Primeiros Sobreviventes",
+      "O Ninho"
+    ],
     "capitulo_atual": "Capítulo 1 — Despertar",
     "cenas_escritas": [
       "intro_01 — Acorda no bunker",
@@ -139,7 +185,6 @@
       "porta_fresta — Vê inseto gigante pela fresta"
     ]
   },
-
   "arquitetura_tecnica": {
     "estrutura_pastas": [
       "index.html — tela principal",
@@ -153,12 +198,23 @@
       "MEMORY.json — este arquivo"
     ],
     "formato_cena_json": {
-      "campos_obrigatorios": ["id", "background", "personagem", "texto", "escolhas"],
-      "campos_opcionais_escolha": ["efeito"],
-      "efeitos_suportados": ["vida", "sanidade", "inventario"]
+      "campos_obrigatorios": [
+        "id",
+        "background",
+        "personagem",
+        "texto",
+        "escolhas"
+      ],
+      "campos_opcionais_escolha": [
+        "efeito"
+      ],
+      "efeitos_suportados": [
+        "vida",
+        "sanidade",
+        "inventario"
+      ]
     }
   },
-
   "integracao_claude_codex": {
     "fluxo": "Claude Web gera conteúdo → usuário commita no GitHub → Codex implementa",
     "proximas_tarefas_codex": [
@@ -174,7 +230,6 @@
       "Expandir bestiário com mais espécies amazônicas"
     ]
   },
-
   "ultima_atualizacao": "2026-04-20",
   "sessao_atual": "Definição de arquitetura e integração Claude+Codex"
 }
