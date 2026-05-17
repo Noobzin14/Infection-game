@@ -685,25 +685,23 @@ function logCombate(mensagem) {
  * Inicia o combate com os dados do inimigo
  */
 function iniciarCombate(dadosInimigo) {
+  // Verificar se o bestiário foi carregado
+  if (!BESTIARIO_COMBATE || Object.keys(BESTIARIO_COMBATE).length === 0) {
+    Logger.error('COMBATE', 'Bestiário não carregado. Impossível iniciar combate.');
+    Logger.info('COMBATE', 'Inimigos disponíveis: nenhum (bestiário vazio)');
+    // Renderizar cena normalmente sem combate
+    return;
+  }
+  
   // Buscar inimigo no bestiário por ID ou nome
   let baseInimigo = BESTIARIO_COMBATE[dadosInimigo] || BESTIARIO_COMBATE['barata_americana'];
   
-  // Se não encontrou, criar inimigo padrão
+  // Se não encontrou, registrar erro e renderizar cena normalmente sem combate
   if (!baseInimigo) {
-    baseInimigo = {
-      id: 'desconhecido',
-      nome: 'Inimigo Desconhecido',
-      hp: 30,
-      dano: 8,
-      agilidade: 5,
-      velocidade: 5,
-      partes: {
-        cabeca: { hp: 10, destruida: false, efeito_destruicao: 'morte_instantanea' },
-        tronco: { hp: 15, destruida: false, efeito_destruicao: 'sangramento_grave' }
-      },
-      tracos: [],
-      statusAtivos: []
-    };
+    Logger.error('COMBATE', 'Inimigo não encontrado: ' + dadosInimigo);
+    Logger.info('COMBATE', 'Inimigos disponíveis: ' + Object.keys(BESTIARIO_COMBATE).join(', '));
+    // Renderizar cena normalmente sem combate
+    return;
   }
   
   window.GameState.emCombate = true;
@@ -1178,7 +1176,8 @@ async function carregarConfiguracaoPersonagem() {
         BESTIARIO_COMBATE[inimigo.nome] = inimigo;
       }
       window.GameState.bestiario = BESTIARIO_COMBATE;
-      Logger.info('COMBATE', 'Bestiário carregado com sucesso.', { total: Object.keys(dadosBestiario.inimigos || {}).length });
+      Logger.info('COMBATE', 'Bestiário carregado com sucesso.', { total: Object.keys(BESTIARIO_COMBATE).length });
+      Logger.info('COMBATE', 'Inimigos disponíveis: ' + Object.keys(BESTIARIO_COMBATE).join(', '));
     }
   } catch (erro) {
     configuracaoPersonagem = {};
