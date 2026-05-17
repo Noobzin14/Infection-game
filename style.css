@@ -16,6 +16,7 @@ body {
   min-height: 100vh;
   background: var(--verde-militar);
   color: #f2f2f2;
+  text-rendering: optimizeLegibility;
 }
 
 .app,
@@ -149,7 +150,7 @@ body {
   left: 0.8rem;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.75rem;
   background: rgba(0, 0, 0, 0.45);
   padding: 0.55rem;
 }
@@ -160,7 +161,7 @@ body {
   overflow-y: auto;
   background: var(--preto-transparente);
   border-top: 3px solid var(--vermelho-sangue);
-  padding: 1rem;
+  padding: 1.25rem;
   display: flex;
   flex-direction: column;
   gap: 0.7rem;
@@ -173,7 +174,8 @@ body {
 
 #texto-dialogo {
   margin: 0;
-  line-height: 1.4;
+  line-height: 1.5;
+  letter-spacing: 0.02em;
   flex: 1;
   overflow-y: auto;
 }
@@ -181,13 +183,20 @@ body {
 .escolhas-container {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.6rem;
+  gap: 0.75rem;
 }
 
 .botao-escolha {
   min-width: 220px;
   white-space: normal;
   word-break: break-word;
+  padding: 0.9rem 1.2rem;
+  border-radius: 4px;
+  transition: transform 0.1s ease, background 0.2s ease;
+}
+
+.botao-escolha:active {
+  transform: scale(0.98);
 }
 
 @media (max-width: 768px) {
@@ -219,7 +228,7 @@ body {
   transform: translateX(100%);
   transition: transform 0.3s ease;
   z-index: 20;
-  padding: 1rem;
+  padding: 1.25rem;
   display: flex;
   flex-direction: column;
 }

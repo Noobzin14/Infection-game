@@ -171,7 +171,7 @@
     <div><label>Velocidade de texto: <strong id="dev-text-speed-v">40</strong>ms</label><input type="range" id="dev-text-speed" min="5" max="150" value="40"></div>
     <div><label><input type="checkbox" id="dev-toggle-scene-ids"> Exibir IDs de cena</label></div>
     <div><label><input type="checkbox" id="dev-toggle-contrast"> Alto contraste</label></div>
-    <div style="margin-top:8px"><button id="dev-design-reset">RESETAR DESIGN</button></div>`;
+    <div style="margin-top:8px"><button id="dev-design-polido">APLICAR PRESET POLIDO</button> <button id="dev-design-reset">RESETAR DESIGN</button></div>`;
 
   const renderLupaTab = () => {
     const fx = lupaFixado;
@@ -336,7 +336,8 @@
     q('#dev-text-speed')?.addEventListener('input', (e) => { const val = Number(e.target.value); q('#dev-text-speed-v').textContent = val; window.GameState.textSpeed = val; });
     q('#dev-toggle-scene-ids')?.addEventListener('change', (e) => { window.GameState.showSceneIds = !!e.target.checked; document.body.classList.toggle('dev-show-scene-ids', !!e.target.checked); });
     q('#dev-toggle-contrast')?.addEventListener('change', (e) => document.body.classList.toggle('dev-high-contrast', !!e.target.checked));
-    q('#dev-design-reset')?.addEventListener('click', () => { root.style.removeProperty('--verde-militar'); root.style.removeProperty('--vermelho-sangue'); root.style.removeProperty('--preto-detalhe'); window.GameState.textSpeed = 40; document.body.classList.remove('dev-show-scene-ids', 'dev-high-contrast'); renderTab('design'); });
+    q('#dev-design-polido')?.addEventListener('click', () => { const areaDialogo = document.querySelector('.area-dialogo'); const escolhas = document.querySelector('.escolhas-container'); const overlay = document.querySelector('.overlay-status'); const texto = document.getElementById('texto-dialogo'); if (areaDialogo) areaDialogo.style.padding = '1.25rem'; if (escolhas) escolhas.style.gap = '0.75rem'; if (overlay) overlay.style.gap = '0.75rem'; if (texto) { texto.style.lineHeight = '1.5'; texto.style.letterSpacing = '0.02em'; } showToast('Preset polido aplicado (sessão atual).'); });
+    q('#dev-design-reset')?.addEventListener('click', () => { root.style.removeProperty('--verde-militar'); root.style.removeProperty('--vermelho-sangue'); root.style.removeProperty('--preto-detalhe'); window.GameState.textSpeed = 40; document.body.classList.remove('dev-show-scene-ids', 'dev-high-contrast'); const areaDialogo = document.querySelector('.area-dialogo'); const escolhas = document.querySelector('.escolhas-container'); const overlay = document.querySelector('.overlay-status'); const texto = document.getElementById('texto-dialogo'); if (areaDialogo) areaDialogo.style.removeProperty('padding'); if (escolhas) escolhas.style.removeProperty('gap'); if (overlay) overlay.style.removeProperty('gap'); if (texto) { texto.style.removeProperty('line-height'); texto.style.removeProperty('letter-spacing'); } renderTab('design'); });
     q('#dev-export-state')?.addEventListener('click', exportState);
     q('#dev-import-state')?.addEventListener('click', () => q('#dev-import-state-file')?.click());
     q('#dev-import-state-file')?.addEventListener('change', async (e) => { const file = e.target.files?.[0]; if (!file) return; try { const data = JSON.parse(await file.text()); window.GameState = { ...(window.GameState || {}), ...data }; callFn('atualizarStatus'); showToast('Estado importado.'); renderTab('repo'); } catch { showToast('JSON inválido.'); } });

@@ -1,0 +1,18 @@
+{
+  "meta": {
+    "nome": "English (US)",
+    "autor": "Infection Game Team"
+  },
+  "cenas": {
+    "criacao_01": {
+      "texto": "You wake up in the dark.",
+      "escolhas": ["Take a deep breath", "Call for help"]
+    }
+  },
+  "ui": {
+    "vida": "Health",
+    "sanidade": "Sanity",
+    "inventario": "Inventory",
+    "atributos": "Attributes"
+  }
+}

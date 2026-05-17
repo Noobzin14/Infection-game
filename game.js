@@ -17,7 +17,13 @@ Object.assign(window.GameState, {
     percepcao: 5,
     mente: 5
   },
-  tracos: []
+  tracos: [],
+  emCombate: false,
+  inimigoAtual: null,
+  turnoCombate: 0,
+  acoesDisponiveis: [],
+  locale: 'pt-BR',
+  locales: {}
 });
 
 let configuracaoPersonagem = {};
@@ -25,6 +31,132 @@ let configuracaoPersonagem = {};
 let intervaloDigitacao = null;
 let digitando = false;
 let textoCompletoAtual = '';
+
+
+const CHAVE_SALVAMENTO = 'infection_game_save_v1';
+
+function criarSnapshotProgresso() {
+  return {
+    nomeJogador: window.GameState.nomeJogador,
+    capituloAtual: window.GameState.capituloAtual,
+    cenaAtual: window.GameState.cenaAtual,
+    statusVida: window.GameState.statusVida,
+    statusSanidade: window.GameState.statusSanidade,
+    inventario: [...window.GameState.inventario],
+    atributos: { ...window.GameState.atributos },
+    tracos: [...window.GameState.tracos],
+    velocidadeTexto: window.GameState.velocidadeTexto
+  };
+}
+
+function salvarProgresso() {
+  try {
+    const snapshot = criarSnapshotProgresso();
+    window.localStorage.setItem(CHAVE_SALVAMENTO, JSON.stringify(snapshot));
+  } catch (erro) {
+    Logger.warn('SAVE', 'Falha ao salvar progresso.', { erro: erro.message });
+  }
+}
+
+function restaurarProgressoSalvo(dados) {
+  if (!dados || typeof dados !== 'object') {
+    return null;
+  }
+
+  window.GameState.nomeJogador = typeof dados.nomeJogador === 'string' ? dados.nomeJogador : window.GameState.nomeJogador;
+  window.GameState.capituloAtual = Number.isInteger(dados.capituloAtual) ? dados.capituloAtual : window.GameState.capituloAtual;
+  window.GameState.cenaAtual = typeof dados.cenaAtual === 'string' ? dados.cenaAtual : window.GameState.cenaAtual;
+  window.GameState.statusVida = typeof dados.statusVida === 'number' ? dados.statusVida : window.GameState.statusVida;
+  window.GameState.statusSanidade = typeof dados.statusSanidade === 'number' ? dados.statusSanidade : window.GameState.statusSanidade;
+  window.GameState.inventario = Array.isArray(dados.inventario) ? dados.inventario.slice(0, 5) : window.GameState.inventario;
+  window.GameState.atributos = (dados.atributos && typeof dados.atributos === 'object') ? {
+    ...window.GameState.atributos,
+    ...dados.atributos
+  } : window.GameState.atributos;
+  window.GameState.tracos = Array.isArray(dados.tracos) ? dados.tracos : window.GameState.tracos;
+  window.GameState.velocidadeTexto = typeof dados.velocidadeTexto === 'number' ? dados.velocidadeTexto : window.GameState.velocidadeTexto;
+  window.GameState.emCombate = false;
+  window.GameState.inimigoAtual = null;
+  window.GameState.turnoCombate = 0;
+  window.GameState.acoesDisponiveis = [];
+
+  return {
+    capitulo: window.GameState.capituloAtual,
+    cena: window.GameState.cenaAtual
+  };
+}
+
+function carregarProgressoSalvo() {
+  try {
+    const bruto = window.localStorage.getItem(CHAVE_SALVAMENTO);
+    if (!bruto) {
+      return null;
+    }
+    const dados = JSON.parse(bruto);
+    return restaurarProgressoSalvo(dados);
+  } catch (erro) {
+    Logger.warn('SAVE', 'Falha ao carregar progresso salvo.', { erro: erro.message });
+    return null;
+  }
+}
+
+
+
+function t(chave, fallback = '', locale = window.GameState.locale, contexto = {}) {
+  const dicionario = window.GameState.locales?.[locale] || {};
+  const valor = chave
+    .split('.')
+    .reduce((acc, parte) => (acc && typeof acc === 'object' ? acc[parte] : undefined), dicionario);
+
+  const textoBase = typeof valor === 'string' ? valor : fallback;
+  if (typeof textoBase !== 'string') {
+    return '';
+  }
+
+  return textoBase.replace(/\{(\w+)\}/g, (_, nome) => {
+    if (Object.hasOwn(contexto, nome)) {
+      return String(contexto[nome]);
+    }
+    return `{${nome}}`;
+  });
+}
+
+function resolverTextoLocalizado(campoTexto) {
+  if (typeof campoTexto === 'string') {
+    return campoTexto;
+  }
+  if (campoTexto && typeof campoTexto === 'object') {
+    return campoTexto[window.GameState.locale] || campoTexto['pt-BR'] || '';
+  }
+  return '';
+}
+
+function resolverEscolhasLocalizadas(cena) {
+  const escolhasFonte = Array.isArray(cena.escolhas) ? cena.escolhas : cena.choices;
+  return (escolhasFonte || []).map((escolha) => {
+    const textoFonte = escolha.texto ?? escolha.text;
+    const textoResolvido = resolverTextoLocalizado(textoFonte) || (typeof escolha.texto === 'string' ? escolha.texto : escolha.text);
+    return {
+      ...escolha,
+      texto: textoResolvido,
+      text: textoResolvido
+    };
+  });
+}
+
+async function carregarLocale(locale = 'pt-BR') {
+  try {
+    const resposta = await fetch(`locales/${locale}.json`);
+    if (!resposta.ok) {
+      throw new Error(`Locale ${locale} indisponível`);
+    }
+    const dados = await resposta.json();
+    window.GameState.locales[locale] = dados;
+    window.GameState.locale = locale;
+  } catch (erro) {
+    Logger.warn('I18N', 'Falha ao carregar locale.', { locale, erro: erro.message });
+  }
+}
 
 const elementos = {
   telaAbertura: document.getElementById('tela-abertura'),
@@ -56,8 +188,8 @@ function alternarTela(telaAtiva) {
 }
 
 function atualizarStatus() {
-  elementos.statusVida.textContent = `Vida: ${window.GameState.statusVida}`;
-  elementos.statusSanidade.textContent = `Sanidade: ${window.GameState.statusSanidade}`;
+  elementos.statusVida.textContent = `${t('ui.vida', 'Vida')}: ${window.GameState.statusVida}`;
+  elementos.statusSanidade.textContent = `${t('ui.sanidade', 'Sanidade')}: ${window.GameState.statusSanidade}`;
   elementos.statusInventario.textContent =
     `Atributos — FOR ${window.GameState.atributos.forca} | AGI ${window.GameState.atributos.agilidade} | RES ${window.GameState.atributos.resistencia} | PER ${window.GameState.atributos.percepcao} | MEN ${window.GameState.atributos.mente} | Inventário: ${window.GameState.inventario.length}/5`;
 }
@@ -81,6 +213,10 @@ function recalcularStatusMaximos() {
 }
 
 function avancarCena(escolha, textoEscolha) {
+  if (window.GameState.emCombate) {
+    registrarHistorico('Ação de cena bloqueada durante combate.');
+    return;
+  }
   const resultadoEfeitos = aplicarEfeitos(escolha.efeito);
   if (resultadoEfeitos === 'INVENTARIO_CHEIO') {
     registrarHistorico(`Escolha bloqueada por inventário cheio: ${textoEscolha || 'Sem texto'}`);
@@ -97,6 +233,7 @@ function avancarCena(escolha, textoEscolha) {
     window.GameState.statusSanidade = Math.min(100, 60 + (window.GameState.atributos.mente * 8));
     registrarHistorico('Status recalculado após criação do personagem.');
     atualizarStatus();
+    salvarProgresso();
   }
 
   registrarHistorico(`Escolha: ${textoEscolha || 'Sem texto'}`);
@@ -113,7 +250,7 @@ function renderEscolhas(cena) {
   const escolhasCena = Array.isArray(cena.escolhas) ? cena.escolhas : cena.choices;
 
   (escolhasCena || []).forEach((escolha) => {
-    const textoEscolha = typeof escolha.texto === 'string' ? escolha.texto : escolha.text;
+    const textoEscolha = typeof escolha.texto === 'string' ? escolha.texto : (typeof escolha.text === 'string' ? escolha.text : '');
 
     const botao = document.createElement('button');
     botao.className = 'botao-principal botao-escolha';
@@ -190,6 +327,7 @@ function aplicarEfeitos(efeito = {}) {
 
   recalcularStatusMaximos();
   atualizarStatus();
+  salvarProgresso();
   return 'OK';
 }
 
@@ -207,6 +345,7 @@ function adicionarItemInventario(item) {
 
   window.GameState.inventario.push(item);
   registrarHistorico(`Item obtido: ${item}`);
+  salvarProgresso();
   return 'OK';
 }
 
@@ -222,12 +361,14 @@ function mostrarTextoGradual(texto, aoFinal) {
   limparDigitacao();
   textoCompletoAtual = texto;
   elementos.textoDialogo.textContent = '';
+  elementos.textoDialogo.style.opacity = '0.95';
   let indice = 0;
   digitando = true;
 
   intervaloDigitacao = setInterval(() => {
     if (indice >= texto.length) {
       limparDigitacao();
+      elementos.textoDialogo.style.opacity = '1';
       aoFinal();
       return;
     }
@@ -323,6 +464,7 @@ function resolverCenaCriacaoDinamica(cena) {
 function renderCena(id) {
   const cena = window.GameState.cenas[id];
   window.GameState.cenaAtual = id;
+  salvarProgresso();
   elementos.escolhasContainer.innerHTML = '';
 
   if (!cena) {
@@ -351,8 +493,13 @@ function renderCena(id) {
 
   aplicarClasseBackground(cenaRenderizavel.background);
 
-  const textoCena = typeof cenaRenderizavel.texto === 'string' ? cenaRenderizavel.texto : cenaRenderizavel.text;
-  const escolhasCena = Array.isArray(cenaRenderizavel.escolhas) ? cenaRenderizavel.escolhas : cenaRenderizavel.choices;
+  const textoCena = resolverTextoLocalizado(cenaRenderizavel.texto) || resolverTextoLocalizado(cenaRenderizavel.text);
+  const escolhasCena = resolverEscolhasLocalizadas(cenaRenderizavel);
+
+  if (cenaRenderizavel.combate && !window.GameState.emCombate) {
+    iniciarCombate(cenaRenderizavel.combate.inimigo);
+    return;
+  }
 
   mostrarTextoGradual(textoCena || '', () => {
     Logger.info('CENA', 'Cena renderizada com sucesso.', {
@@ -361,8 +508,138 @@ function renderCena(id) {
       totalEscolhas: (escolhasCena || []).length
     });
 
-    renderEscolhas(cenaRenderizavel);
+    renderEscolhas({ ...cenaRenderizavel, escolhas: escolhasCena });
   });
+}
+
+
+
+const BESTIARIO_COMBATE = {
+  'Barata Americana': {
+    nome: 'Barata Americana',
+    hp: 30,
+    dano: 8,
+    agilidade: 5,
+    velocidade: 7,
+    fraquezas: ['Fogo', 'Esmagamento']
+  },
+  "Barata d'Água": {
+    nome: "Barata d'Água",
+    hp: 80,
+    dano: 22,
+    agilidade: 5,
+    velocidade: 7,
+    fraquezas: ['Eletricidade', 'Esmagamento']
+  }
+};
+
+let bancoItens = {};
+
+function obterPrimeiraArma() {
+  const gruposArmas = bancoItens?.armas || {};
+  for (const grupo of Object.values(gruposArmas)) {
+    if (Array.isArray(grupo) && grupo.length > 0) {
+      return grupo[0];
+    }
+  }
+  return null;
+}
+
+function renderCombate() {
+  const inimigo = window.GameState.inimigoAtual;
+  if (!inimigo) {
+    return;
+  }
+
+  elementos.nomePersonagem.textContent = `COMBATE — ${inimigo.nome}`;
+  const textoFraquezas = Array.isArray(inimigo.fraquezas) ? inimigo.fraquezas.join(', ') : 'Desconhecidas';
+  elementos.textoDialogo.textContent = `Turno ${window.GameState.turnoCombate}: ${inimigo.nome} HP ${inimigo.hp}. Fraquezas conhecidas: ${textoFraquezas}.`;
+
+  elementos.escolhasContainer.innerHTML = '';
+  window.GameState.acoesDisponiveis.forEach((acao) => {
+    const botao = document.createElement('button');
+    botao.className = 'botao-principal botao-escolha';
+    botao.textContent = acao;
+    botao.addEventListener('click', () => {
+      const resultado = resolverAcaoCombatente(acao);
+      registrarHistorico(`Combate: ${resultado.resultado}`);
+      if (window.GameState.emCombate) {
+        renderCombate();
+      } else {
+        renderCena(window.GameState.cenaAtual);
+      }
+    });
+    elementos.escolhasContainer.appendChild(botao);
+  });
+}
+
+function iniciarCombate(inimigo) {
+  const baseInimigo = BESTIARIO_COMBATE[inimigo] || BESTIARIO_COMBATE['Barata Americana'];
+  window.GameState.emCombate = true;
+  window.GameState.turnoCombate = 1;
+  window.GameState.acoesDisponiveis = ['atacar', 'usar_item', 'fugir', 'examinar'];
+  window.GameState.inimigoAtual = {
+    ...baseInimigo,
+    hpMaximo: baseInimigo.hp
+  };
+  registrarHistorico(`Combate iniciado contra ${window.GameState.inimigoAtual.nome}.`);
+  renderCombate();
+}
+
+function resolverAcaoCombatente(tipoAcao, alvo = null) {
+  const inimigo = window.GameState.inimigoAtual;
+  const formulas = configuracaoPersonagem?.formulas_combate || {};
+
+  switch (tipoAcao) {
+    case 'atacar': {
+      const arma = obterPrimeiraArma();
+      const danoArma = arma && arma.dano ? Math.round((arma.dano.min + arma.dano.max) / 2) : 2;
+      const bonusCombativo = window.GameState.tracos.includes('combativo') ? 1 : 0;
+      const multiplicadorForca = typeof formulas.dano_melee === 'string' ? 1.5 : 1.5;
+      const dano = Math.max(1, Math.round((window.GameState.atributos.forca * multiplicadorForca) + danoArma + bonusCombativo));
+      inimigo.hp = Math.max(0, inimigo.hp - dano);
+      if (inimigo.hp === 0) {
+        window.GameState.emCombate = false;
+        window.GameState.inimigoAtual = null;
+        window.GameState.turnoCombate = 0;
+        salvarProgresso();
+        return { resultado: `Você derrotou ${inimigo.nome}.`, dados: { dano, alvo } };
+      }
+      window.GameState.turnoCombate += 1;
+      return { resultado: `Ataque causou ${dano} de dano.`, dados: { dano, hpInimigo: inimigo.hp, alvo } };
+    }
+    case 'usar_item': {
+      const idItem = window.GameState.inventario[0];
+      if (!idItem) {
+        return { resultado: 'Sem itens no inventário para usar.', dados: {} };
+      }
+      window.GameState.inventario.shift();
+      atualizarStatus();
+      salvarProgresso();
+      window.GameState.turnoCombate += 1;
+      return { resultado: `Item ${idItem} consumido em combate.`, dados: { item: idItem } };
+    }
+    case 'fugir': {
+      const velocidadeInimigo = inimigo?.velocidade || 5;
+      const chanceFuga = (window.GameState.atributos.agilidade * 0.08) + (velocidadeInimigo < window.GameState.atributos.agilidade ? 0.2 : -0.2);
+      if (Math.random() < Math.max(0.05, Math.min(0.95, chanceFuga))) {
+        window.GameState.emCombate = false;
+        window.GameState.inimigoAtual = null;
+        window.GameState.turnoCombate = 0;
+        salvarProgresso();
+        return { resultado: 'Fuga bem-sucedida.', dados: { chanceFuga } };
+      }
+      window.GameState.turnoCombate += 1;
+      return { resultado: 'Falha ao fugir.', dados: { chanceFuga } };
+    }
+    case 'examinar': {
+      const fraquezas = Array.isArray(inimigo?.fraquezas) ? inimigo.fraquezas : [];
+      window.GameState.turnoCombate += 1;
+      return { resultado: `Fraquezas identificadas: ${fraquezas.join(', ') || 'nenhuma'}.`, dados: { fraquezas } };
+    }
+    default:
+      return { resultado: 'Ação inválida.', dados: { tipoAcao, alvo } };
+  }
 }
 
 async function carregarCapitulo(numero = 1) {
@@ -405,12 +682,18 @@ async function carregarConfiguracaoPersonagem() {
       throw new Error(`Falha HTTP ${resposta.status}`);
     }
     configuracaoPersonagem = await resposta.json();
+
+    const respostaItens = await fetch('data/items.json');
+    if (respostaItens.ok) {
+      bancoItens = await respostaItens.json();
+    }
   } catch (erro) {
     configuracaoPersonagem = {};
     registrarHistorico(`Aviso: character.json indisponível (${erro.message}).`);
   } finally {
     recalcularStatusMaximos();
     atualizarStatus();
+    salvarProgresso();
   }
 }
 
@@ -434,7 +717,17 @@ elementos.btnConfirmar.addEventListener('click', async () => {
   elementos.erroNome.textContent = '';
   window.GameState.nomeJogador = nomeDigitado;
   await carregarConfiguracaoPersonagem();
-  await carregarCapitulo(window.GameState.capituloAtual || 1);
+  await carregarLocale(window.GameState.locale || 'pt-BR');
+
+  const progresso = carregarProgressoSalvo();
+  const capitulo = progresso?.capitulo || window.GameState.capituloAtual || 1;
+  await carregarCapitulo(capitulo);
+  if (progresso?.cena && window.GameState.cenas[progresso.cena]) {
+    renderCena(progresso.cena);
+    registrarHistorico('Progresso restaurado automaticamente.');
+  }
+
+  salvarProgresso();
 });
 
 elementos.inputNome.addEventListener('keydown', (evento) => {
