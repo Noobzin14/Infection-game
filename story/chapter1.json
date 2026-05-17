@@ -8,21 +8,127 @@
       "personagem": null,
       "texto": "Escuridão.\n\nSeus pulmões puxam ar pesado, abafado. Cheira a metal e terra molhada.\n\nVocê está vivo. Por enquanto.",
       "tipo": "criacao",
-      "atributo_base": true
+      "atributo_base": true,
+      "escolhas": [
+        {
+          "texto": "Trabalhava com as mãos. Construção, campo.",
+          "proxima": "criacao_02",
+          "efeito": {
+            "atributos": {
+              "forca": 7,
+              "resistencia": 6,
+              "agilidade": 4,
+              "percepcao": 4,
+              "mente": 4
+            }
+          }
+        },
+        {
+          "texto": "Trabalho de escritório. Sedentário.",
+          "proxima": "criacao_02",
+          "efeito": {
+            "atributos": {
+              "forca": 4,
+              "resistencia": 4,
+              "agilidade": 4,
+              "percepcao": 6,
+              "mente": 7
+            }
+          }
+        },
+        {
+          "texto": "Me exercitava. Corria, academia.",
+          "proxima": "criacao_02",
+          "efeito": {
+            "atributos": {
+              "forca": 5,
+              "resistencia": 7,
+              "agilidade": 7,
+              "percepcao": 4,
+              "mente": 4
+            }
+          }
+        }
+      ]
     },
     {
       "id": "criacao_02",
       "background": "bunker_escuro",
       "personagem": null,
       "texto": "Um barulho vem de fora. Pesado. Rítmico.\n\nSeu corpo reage antes da sua mente processar.",
-      "tipo": "criacao"
+      "tipo": "criacao",
+      "escolhas": [
+        {
+          "texto": "Me mover rápido. Sair da linha de perigo.",
+          "proxima": "criacao_03",
+          "efeito": {
+            "modificadores": {
+              "agilidade": 2,
+              "percepcao": 1
+            }
+          }
+        },
+        {
+          "texto": "Ficar quieto. Observar antes de agir.",
+          "proxima": "criacao_03",
+          "efeito": {
+            "modificadores": {
+              "percepcao": 3,
+              "mente": 1
+            }
+          }
+        },
+        {
+          "texto": "Pegar o que tiver na mão e me preparar.",
+          "proxima": "criacao_03",
+          "efeito": {
+            "modificadores": {
+              "forca": 2,
+              "resistencia": 1
+            }
+          }
+        }
+      ]
     },
     {
       "id": "criacao_03",
       "background": "bunker_escuro",
       "personagem": null,
       "texto": "O barulho some.\n\nVocê prende a respiração por mais alguns segundos.\n\nSilêncio.",
-      "tipo": "criacao"
+      "tipo": "criacao",
+      "escolhas": [
+        {
+          "texto": "Claras. Lembro de tudo.",
+          "proxima": "intro_01",
+          "efeito": {
+            "modificadores": {
+              "mente": 3
+            },
+            "traco": "memoria_intacta",
+            "sanidade": -10
+          }
+        },
+        {
+          "texto": "Fragmentadas. Flashes de luz, gritos.",
+          "proxima": "intro_01",
+          "efeito": {
+            "modificadores": {
+              "mente": 1,
+              "percepcao": 1
+            }
+          }
+        },
+        {
+          "texto": "Um vazio completo. Nada antes desse momento.",
+          "proxima": "intro_01",
+          "efeito": {
+            "modificadores": {
+              "mente": -2
+            },
+            "traco": "instinto_puro"
+          }
+        }
+      ]
     },
     {
       "id": "intro_01",
