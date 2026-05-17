@@ -263,6 +263,13 @@ function avancarCena(escolha, textoEscolha) {
     registrarHistorico('Ação de cena bloqueada durante combate.');
     return;
   }
+  
+  // Verificar comando especial __recomecar__
+  if (escolha.proxima === '__recomecar__' || escolha.next_scene === '__recomecar__') {
+    window.location.reload();
+    return;
+  }
+  
   const resultadoEfeitos = aplicarEfeitos(escolha.efeito);
   if (resultadoEfeitos === 'INVENTARIO_CHEIO') {
     registrarHistorico(`Escolha bloqueada por inventário cheio: ${textoEscolha || 'Sem texto'}`);
@@ -542,8 +549,10 @@ function renderCena(id) {
   const textoCena = resolverTextoLocalizado(cenaRenderizavel.texto) || resolverTextoLocalizado(cenaRenderizavel.text);
   const escolhasCena = resolverEscolhasLocalizadas(cenaRenderizavel);
 
+  // Salvar cena anterior antes de iniciar combate (para retorno após vitória/fuga)
   if (cenaRenderizavel.combate && !window.GameState.emCombate) {
-    iniciarCombate(cenaRenderizavel.combate.inimigo);
+    window.GameState.cenaAnterior = id;
+    iniciarCombate(cenaRenderizavel.combate.inimigo, id);
     return;
   }
 
@@ -601,6 +610,29 @@ function renderCombate() {
     }
   }
   
+  // Gerar lista de itens do inventário
+  let itensHTML = '';
+  if (window.GameState.alvoSelecionado === 'selecionando_item') {
+    if (window.GameState.inventario.length === 0) {
+      itensHTML = '<span style="color: #888; font-style: italic;">Inventário vazio.</span>';
+    } else {
+      for (const itemId of window.GameState.inventario) {
+        // Buscar nome do item
+        let nomeItem = itemId;
+        for (const categoria of Object.values(bancoItens || {})) {
+          if (Array.isArray(categoria)) {
+            const itemEncontrado = categoria.find(i => i.id === itemId || i.nome === itemId);
+            if (itemEncontrado) {
+              nomeItem = itemEncontrado.nome || itemId;
+              break;
+            }
+          }
+        }
+        itensHTML += `<button class="btn-acao-combate" data-item="${itemId}" style="font-size: 11px;">${nomeItem}</button>`;
+      }
+    }
+  }
+  
   elementos.textoDialogo.innerHTML = `
     <div class="painel-combate">
       <!-- Info do Inimigo -->
@@ -618,6 +650,13 @@ function renderCombate() {
       ${window.GameState.alvoSelecionado === 'selecionando_parte' ? `
       <div class="partes-container" style="margin-top: 4px;">
         ${partesHTML}
+      </div>
+      ` : ''}
+      
+      <!-- Lista de itens (aparece ao usar item) -->
+      ${window.GameState.alvoSelecionado === 'selecionando_item' ? `
+      <div class="acoes-combate" style="margin-top: 4px;">
+        ${itensHTML}
       </div>
       ` : ''}
       
@@ -668,6 +707,14 @@ function renderCombate() {
       }
     });
   });
+  
+  // Adicionar event listeners para os itens do inventário
+  elementos.textoDialogo.querySelectorAll('[data-item]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const itemId = btn.dataset.item;
+      usarItemCombate(itemId);
+    });
+  });
 }
 
 /**
@@ -684,12 +731,15 @@ function logCombate(mensagem) {
 /**
  * Inicia o combate com os dados do inimigo
  */
-function iniciarCombate(dadosInimigo) {
+function iniciarCombate(dadosInimigo, cenaId) {
   // Verificar se o bestiário foi carregado
   if (!BESTIARIO_COMBATE || Object.keys(BESTIARIO_COMBATE).length === 0) {
     Logger.error('COMBATE', 'Bestiário não carregado. Impossível iniciar combate.');
     Logger.info('COMBATE', 'Inimigos disponíveis: nenhum (bestiário vazio)');
     // Renderizar cena normalmente sem combate
+    if (cenaId) {
+      renderCena(cenaId);
+    }
     return;
   }
   
@@ -701,6 +751,9 @@ function iniciarCombate(dadosInimigo) {
     Logger.error('COMBATE', 'Inimigo não encontrado: ' + dadosInimigo);
     Logger.info('COMBATE', 'Inimigos disponíveis: ' + Object.keys(BESTIARIO_COMBATE).join(', '));
     // Renderizar cena normalmente sem combate
+    if (cenaId) {
+      renderCena(cenaId);
+    }
     return;
   }
   
@@ -754,6 +807,12 @@ function resolverAcaoJogador(acao) {
  * Resolve o ataque a uma parte específica do inimigo
  */
 function resolverAtaqueParte(parteAlvo) {
+  // Verificar se o inimigo ainda existe (pode ter sido perdido durante o combate)
+  if (!window.GameState.inimigoAtual) {
+    Logger.error('COMBATE', 'Inimigo atual é null em resolverAtaqueParte.');
+    return;
+  }
+  
   const inimigo = window.GameState.inimigoAtual;
   
   if (!inimigo.partes || !inimigo.partes[parteAlvo]) {
@@ -850,16 +909,35 @@ function aplicarEfeitoDestruicao(efeito, inimigo) {
 
 /**
  * Resolve o uso de item em combate
+ * Exibe lista de itens do inventário para o jogador escolher
  */
 function resolverUsarItem() {
   if (window.GameState.inventario.length === 0) {
-    logCombate('Você não tem itens para usar!');
-    setTimeout(() => resolverTurnoInimigo(), 500);
+    logCombate('Inventário vazio.');
+    // Não passa turno, apenas informa e retorna ao estado normal de combate
+    window.GameState.alvoSelecionado = null;
+    renderCombate();
     return;
   }
   
-  // Mostrar lista de itens (simplificado: usa o primeiro item)
-  const itemId = window.GameState.inventario[0];
+  // Exibir lista de itens como botões clicáveis na UI de combate
+  window.GameState.alvoSelecionado = 'selecionando_item';
+  renderCombate();
+  logCombate('Selecione um item para usar.');
+}
+
+/**
+ * Usa um item específico do inventário
+ */
+function usarItemCombate(itemId) {
+  const indexItem = window.GameState.inventario.indexOf(itemId);
+  
+  if (indexItem === -1) {
+    logCombate('Item não encontrado no inventário.');
+    window.GameState.alvoSelecionado = null;
+    renderCombate();
+    return;
+  }
   
   // Buscar dados do item
   let itemDados = null;
@@ -870,24 +948,33 @@ function resolverUsarItem() {
     }
   }
   
+  // Aplicar efeitos do item
   if (itemDados && itemDados.efecto) {
     const efeito = itemDados.efecto;
+    let mensagemEfeito = '';
+    
     if (efeito.vida) {
       window.GameState.statusVida = Math.min(100, window.GameState.statusVida + efeito.vida);
+      mensagemEfeito += `${efeito.vida} de vida`;
     }
     if (efeito.sanidade) {
       window.GameState.statusSanidade = Math.min(100, window.GameState.statusSanidade + efeito.sanidade);
+      if (mensagemEfeito) mensagemEfeito += ', ';
+      mensagemEfeito += `${efeito.sanidade} de sanidade`;
     }
-    logCombate(`Você usou ${itemId} e recuperou ${efeito.vida || 0} de vida.`);
+    
+    logCombate(`Você usou ${itemDados.nome || itemId} e recuperou ${mensagemEfeito}.`);
   } else {
     logCombate(`Você usou ${itemId}.`);
   }
   
   // Remover item do inventário
-  window.GameState.inventario.shift();
+  window.GameState.inventario.splice(indexItem, 1);
   atualizarStatus();
   salvarProgresso();
   
+  // Sair do modo de seleção e passar turno para o inimigo
+  window.GameState.alvoSelecionado = null;
   setTimeout(() => resolverTurnoInimigo(), 500);
 }
 
@@ -1070,6 +1157,7 @@ function verificarFimCombate() {
  */
 function encerrarCombate(resultado) {
   window.GameState.emCombate = false;
+  const inimigoDerrotado = window.GameState.inimigoAtual;
   window.GameState.inimigoAtual = null;
   window.GameState.turnoCombate = 0;
   window.GameState.alvoSelecionado = null;
@@ -1078,8 +1166,8 @@ function encerrarCombate(resultado) {
     case 'vitoria':
       logCombate('Você venceu o combate!');
       // Loot: adicionar drops se houver espaço
-      if (window.GameState.inimigoAtual?.drops) {
-        for (const drop of window.GameState.inimigoAtual.drops) {
+      if (inimigoDerrotado?.drops) {
+        for (const drop of inimigoDerrotado.drops) {
           if (window.GameState.inventario.length < 5) {
             window.GameState.inventario.push(drop);
             logCombate(`Obteve: ${drop}`);
@@ -1088,7 +1176,10 @@ function encerrarCombate(resultado) {
       }
       atualizarStatus();
       salvarProgresso();
-      setTimeout(() => renderCena(window.GameState.cenaAtual), 2000);
+      // Limpar painel de combate e restaurar área de diálogo normal após 2 segundos
+      setTimeout(() => {
+        renderCena(window.GameState.cenaAnterior || 'exploracao_01');
+      }, 2000);
       break;
       
     case 'derrota':
