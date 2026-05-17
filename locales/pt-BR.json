@@ -1,0 +1,18 @@
+{
+  "meta": {
+    "nome": "Português (Brasil)",
+    "autor": "Equipe Infection Game"
+  },
+  "cenas": {
+    "criacao_01": {
+      "texto": "Você acorda no escuro.",
+      "escolhas": ["Respirar fundo", "Gritar por ajuda"]
+    }
+  },
+  "ui": {
+    "vida": "Vida",
+    "sanidade": "Sanidade",
+    "inventario": "Inventário",
+    "atributos": "Atributos"
+  }
+}

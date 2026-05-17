@@ -156,7 +156,10 @@
           "texto": "Recuar imediatamente",
           "proxima": "exploracao_01"
         }
-      ]
+      ],
+      "combate": {
+        "inimigo": "Barata Americana"
+      }
     },
     {
       "id": "colapso_mental",
