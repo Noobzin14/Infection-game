@@ -14,3 +14,5 @@ Tema: apocalipse com insetos gigantes.
 ## Prioridades
 - Legibilidade do código acima de tudo (dev é iniciante)
 - Cada cena deve ter: background, personagem, texto, escolhas
+
+<!-- build trigger -->
