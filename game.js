@@ -1117,13 +1117,23 @@ async function carregarCapitulo(numero = 1) {
     }
 
     const dados = await resposta.json();
+    Logger.info('CARREGAMENTO', 'JSON do capítulo carregado.', { totalCenas: dados.cenas?.length || 0 });
+    
     window.GameState.capituloAtual = numero;
     window.GameState.cenas = {};
+    
     for (const cena of dados.cenas || []) {
-      window.GameState.cenas[cena.id] = cena;
+      if (cena && cena.id) {
+        window.GameState.cenas[cena.id] = cena;
+      }
     }
+    
+    Logger.info('CARREGAMENTO', 'Cenas indexadas.', { totalIndexadas: Object.keys(window.GameState.cenas).length, ids: Object.keys(window.GameState.cenas) });
 
-    const primeiraCena = window.GameState.cenas.criacao_01 ? 'criacao_01' : (dados.cenas && dados.cenas[0] && dados.cenas[0].id) || null;
+    const primeiraCena = window.GameState.cenas['criacao_01'] ? 'criacao_01' : (dados.cenas && dados.cenas[0] && dados.cenas[0].id) || null;
+    
+    Logger.info('CARREGAMENTO', 'Primeira cena determinada.', { primeiraCena, temCriacao01: !!window.GameState.cenas['criacao_01'] });
+    
     if (!primeiraCena) {
       throw new Error('Nenhuma cena encontrada no capítulo.');
     }
