@@ -1,0 +1,119 @@
+{
+  "_instrucoes": "Bestiário do Infection Game. Dados completos dos inimigos para o sistema de combate com partes destruíveis.",
+  "inimigos": [
+    {
+      "id": "barata_americana",
+      "nome": "Barata Americana",
+      "hp": 30,
+      "dano": 8,
+      "agilidade": 5,
+      "velocidade": 8,
+      "tracos": ["fuga_baixo_hp"],
+      "fraquezas": ["fogo", "esmagamento"],
+      "drops": ["quitina_barata"],
+      "partes": {
+        "cabeca":   { "hp": 10, "efeito_destruicao": "morte_instantanea" },
+        "tronco":   { "hp": 15, "efeito_destruicao": "sangramento_grave" },
+        "abdomen":  { "hp": 12, "efeito_destruicao": "veneno" },
+        "pata_esq": { "hp": 5,  "efeito_destruicao": "reduz_velocidade" },
+        "pata_dir": { "hp": 5,  "efeito_destruicao": "reduz_velocidade" },
+        "antena":   { "hp": 3,  "efeito_destruicao": "remove_deteccao" }
+      }
+    },
+    {
+      "id": "barata_dagua",
+      "nome": "Barata d'Água",
+      "hp": 80,
+      "dano": 22,
+      "agilidade": 5,
+      "velocidade": 8,
+      "tracos": ["resistente_corte"],
+      "fraquezas": ["eletricidade", "esmagamento"],
+      "drops": ["quitina_barata"],
+      "partes": {
+        "cabeca":   { "hp": 20, "efeito_destruicao": "morte_instantanea" },
+        "tronco":   { "hp": 35, "efeito_destruicao": "sangramento_grave" },
+        "abdomen":  { "hp": 25, "efeito_destruicao": "veneno" },
+        "pata_esq": { "hp": 10, "efeito_destruicao": "reduz_velocidade" },
+        "pata_dir": { "hp": 10, "efeito_destruicao": "reduz_velocidade" },
+        "antena":   { "hp": 5,  "efeito_destruicao": "remove_deteccao" }
+      }
+    },
+    {
+      "id": "formiga_tocandira",
+      "nome": "Formiga Tocandira",
+      "hp": 45,
+      "dano": 15,
+      "agilidade": 8,
+      "velocidade": 6,
+      "tracos": ["veneno_ataque"],
+      "fraquezas": ["fogo", "corte"],
+      "drops": ["veneno_tocandira"],
+      "partes": {
+        "cabeca":   { "hp": 12, "efeito_destruicao": "morte_instantanea" },
+        "tronco":   { "hp": 18, "efeito_destruicao": "sangramento_grave" },
+        "abdomen":  { "hp": 15, "efeito_destruicao": "veneno_area" },
+        "pata_esq": { "hp": 6,  "efeito_destruicao": "reduz_velocidade" },
+        "pata_dir": { "hp": 6,  "efeito_destruicao": "reduz_velocidade" },
+        "antena":   { "hp": 4,  "efeito_destruicao": "remove_deteccao" }
+      }
+    },
+    {
+      "id": "cupim_soldado",
+      "nome": "Cupim Soldado",
+      "hp": 60,
+      "dano": 12,
+      "agilidade": 3,
+      "velocidade": 4,
+      "tracos": ["chama_reforcos"],
+      "fraquezas": ["fogo", "veneno"],
+      "drops": ["mandibula_cupim"],
+      "partes": {
+        "cabeca":   { "hp": 18, "efeito_destruicao": "morte_instantanea" },
+        "tronco":   { "hp": 25, "efeito_destruicao": "sangramento_grave" },
+        "abdomen":  { "hp": 20, "efeito_destruicao": "veneno" },
+        "pata_esq": { "hp": 8,  "efeito_destruicao": "reduz_velocidade" },
+        "pata_dir": { "hp": 8,  "efeito_destruicao": "reduz_velocidade" },
+        "mandibula":{ "hp": 10, "efeito_destruicao": "reduz_dano" }
+      }
+    },
+    {
+      "id": "besouro_hercules",
+      "nome": "Besouro Hércules",
+      "hp": 150,
+      "dano": 35,
+      "agilidade": 2,
+      "velocidade": 3,
+      "tracos": ["armadura_natural"],
+      "fraquezas": ["eletricidade", "fogo"],
+      "drops": ["carapaca_hercules"],
+      "partes": {
+        "cabeca":    { "hp": 40, "efeito_destruicao": "morte_instantanea" },
+        "tronco":    { "hp": 60, "efeito_destruicao": "sangramento_grave" },
+        "abdomen":   { "hp": 50, "efeito_destruicao": "veneno" },
+        "pata_esq":  { "hp": 20, "efeito_destruicao": "reduz_velocidade" },
+        "pata_dir":  { "hp": 20, "efeito_destruicao": "reduz_velocidade" },
+        "chifre":    { "hp": 25, "efeito_destruicao": "reduz_dano" }
+      }
+    },
+    {
+      "id": "mariposa_gigante",
+      "nome": "Mariposa Gigante",
+      "hp": 25,
+      "dano": 5,
+      "agilidade": 10,
+      "velocidade": 10,
+      "tracos": ["voo_alto", "cegar_jogador"],
+      "fraquezas": ["fogo", "projétil"],
+      "drops": ["asa_mariposa", "escama_poeira"],
+      "partes": {
+        "cabeca":   { "hp": 8,  "efeito_destruicao": "morte_instantanea" },
+        "tronco":   { "hp": 10, "efeito_destruicao": "sangramento_grave" },
+        "abdomen":  { "hp": 8,  "efeito_destruicao": "veneno" },
+        "asa_esq":  { "hp": 4,  "efeito_destruicao": "reduz_velocidade" },
+        "asa_dir":  { "hp": 4,  "efeito_destruicao": "reduz_velocidade" },
+        "antena":   { "hp": 2,  "efeito_destruicao": "remove_deteccao" }
+      }
+    }
+  ]
+}

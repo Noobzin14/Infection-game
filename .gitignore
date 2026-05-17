@@ -1,2 +1,1 @@
-repo-export.md
-repo-export.pdf
+Nothing should be ignored based on the provided file changes, as they consist only of source/config files (.json, .md, .js, .css) without any build artifacts, dependencies, or temporary files.

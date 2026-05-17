@@ -172,6 +172,18 @@
           "proxima": "criacao_01"
         }
       ]
+    },
+    {
+      "id": "game_over",
+      "background": "bunker_escuro",
+      "personagem": null,
+      "texto": "Você não resistiu.\n\nNo Amazonas apocalíptico, a morte não anuncia chegada.\n\n— FIM —",
+      "escolhas": [
+        {
+          "texto": "Recomeçar",
+          "proxima": "__recomecar__"
+        }
+      ]
     }
   ]
 }

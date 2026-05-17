@@ -270,3 +270,134 @@ body {
   pointer-events: none;
   opacity: 0.35;
 }
+
+/* ============================================ */
+/* ESTILOS DO SISTEMA DE COMBATE                */
+/* ============================================ */
+
+/* Painel de combate */
+.painel-combate {
+  height: 100%;
+  background: var(--preto-transparente);
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  gap: 6px;
+  overflow-y: auto;
+}
+
+/* Barra de HP */
+.barra-hp-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.barra-hp {
+  height: 12px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  position: relative;
+}
+
+.barra-hp-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.barra-hp-fill.inimigo { 
+  background: var(--vermelho-sangue); 
+}
+
+.barra-hp-fill.jogador { 
+  background: #2d4a1e; 
+}
+
+/* Partes do corpo */
+.partes-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.parte-btn {
+  font-size: 11px;
+  padding: 3px 8px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: monospace;
+}
+
+.parte-btn:hover:not(:disabled) { 
+  border-color: var(--vermelho-sangue);
+  background: #3a0000;
+}
+
+.parte-btn.destruida { 
+  opacity: 0.4; 
+  text-decoration: line-through; 
+  cursor: default; 
+}
+
+.parte-btn:disabled {
+  cursor: not-allowed;
+}
+
+/* Ações de combate */
+.acoes-combate {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.btn-acao-combate {
+  padding: 6px 14px;
+  background: #1a1a1a;
+  border-left: 3px solid var(--vermelho-sangue);
+  color: #fff;
+  cursor: pointer;
+  font-family: monospace;
+  font-size: 12px;
+  transition: background 0.2s;
+}
+
+.btn-acao-combate:hover { 
+  background: #5c0000; 
+}
+
+/* Log de combate */
+.log-combate {
+  font-size: 13px;
+  color: #ccc;
+  font-style: italic;
+  min-height: 20px;
+  border-top: 1px solid #222;
+  padding-top: 4px;
+  margin-top: 4px;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .parte-btn { 
+    font-size: 10px; 
+    padding: 2px 6px; 
+  }
+  
+  .btn-acao-combate { 
+    padding: 8px 10px; 
+    font-size: 12px; 
+  }
+  
+  .barra-hp-container {
+    font-size: 11px;
+    flex-wrap: wrap;
+  }
+  
+  .barra-hp {
+    max-width: 100px !important;
+  }
+}

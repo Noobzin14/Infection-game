@@ -36,6 +36,19 @@ let textoCompletoAtual = '';
 const CHAVE_SALVAMENTO = 'infection_game_save_v1';
 const VERSAO_SAVE_ATUAL = '1';
 
+// Efeitos de status em combate
+const EFEITOS_STATUS = {
+  sangramento:       { dano_por_turno: 5,  turnos: 3 },
+  sangramento_grave: { dano_por_turno: 12, turnos: 4 },
+  veneno:            { dano_por_turno: 8,  turnos: 4 },
+  fogo:              { dano_por_turno: 10, turnos: 3 },
+  atordoamento:      { pula_turno: true,   turnos: 1 },
+  imobilizacao:      { impede_fuga: true,  turnos: 2 }
+};
+
+// Bestiário carregado dinamicamente
+let BESTIARIO_COMBATE = {};
+
 function criarSnapshotProgresso() {
   return {
     versao: VERSAO_SAVE_ATUAL,
@@ -546,25 +559,8 @@ function renderCena(id) {
 }
 
 
-
-const BESTIARIO_COMBATE = {
-  'Barata Americana': {
-    nome: 'Barata Americana',
-    hp: 30,
-    dano: 8,
-    agilidade: 5,
-    velocidade: 7,
-    fraquezas: ['Fogo', 'Esmagamento']
-  },
-  "Barata d'Água": {
-    nome: "Barata d'Água",
-    hp: 80,
-    dano: 22,
-    agilidade: 5,
-    velocidade: 7,
-    fraquezas: ['Eletricidade', 'Esmagamento']
-  }
-};
+// Bestiário carregado dinamicamente - será populado via fetch em carregarConfiguracaoPersonagem
+// (já declarado na linha 50)
 
 let bancoItens = {};
 
@@ -578,100 +574,538 @@ function obterPrimeiraArma() {
   return null;
 }
 
+/**
+ * Renderiza a UI de combate no painel inferior
+ * Substitui a área de diálogo pelo painel de combate
+ */
 function renderCombate() {
   const inimigo = window.GameState.inimigoAtual;
   if (!inimigo) {
     return;
   }
 
+  // Atualizar cabeçalho do diálogo para mostrar info do combate
   elementos.nomePersonagem.textContent = `COMBATE — ${inimigo.nome}`;
-  const textoFraquezas = Array.isArray(inimigo.fraquezas) ? inimigo.fraquezas.join(', ') : 'Desconhecidas';
-  elementos.textoDialogo.textContent = `Turno ${window.GameState.turnoCombate}: ${inimigo.nome} HP ${inimigo.hp}. Fraquezas conhecidas: ${textoFraquezas}.`;
-
-  elementos.escolhasContainer.innerHTML = '';
-  window.GameState.acoesDisponiveis.forEach((acao) => {
-    const botao = document.createElement('button');
-    botao.className = 'botao-principal botao-escolha';
-    botao.textContent = acao;
-    botao.addEventListener('click', () => {
-      const resultado = resolverAcaoCombatente(acao);
-      registrarHistorico(`Combate: ${resultado.resultado}`);
-      if (window.GameState.emCombate) {
-        renderCombate();
-      } else {
-        renderCena(window.GameState.cenaAtual);
+  
+  // Criar HTML completo do painel de combate
+  const hpPorcentagemInimigo = Math.round((inimigo.hp / inimigo.hpMaximo) * 100);
+  const hpPorcentagemJogador = Math.round((window.GameState.statusVida / 100) * 100);
+  
+  // Gerar botões das partes do corpo
+  let partesHTML = '';
+  if (inimigo.partes) {
+    for (const [parteNome, parteDados] of Object.entries(inimigo.partes)) {
+      const destruidaClasse = parteDados.destruida ? 'destruida' : '';
+      const nomeParte = parteNome.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+      partesHTML += `<button class="parte-btn ${destruidaClasse}" data-parte="${parteNome}" ${parteDados.destruida ? 'disabled' : ''}>${nomeParte}</button>`;
+    }
+  }
+  
+  elementos.textoDialogo.innerHTML = `
+    <div class="painel-combate">
+      <!-- Info do Inimigo -->
+      <div class="barra-hp-container">
+        <span style="color: var(--vermelho-sangue); font-weight: bold;">[INIMIGO]</span>
+        <span>${inimigo.nome}</span>
+        <span>HP:</span>
+        <div class="barra-hp" style="flex: 1; max-width: 150px;">
+          <div class="barra-hp-fill inimigo" style="width: ${hpPorcentagemInimigo}%;"></div>
+        </div>
+        <span>${inimigo.hp}/${inimigo.hpMaximo}</span>
+      </div>
+      
+      <!-- Partes do corpo (aparecem ao atacar) -->
+      ${window.GameState.alvoSelecionado === 'selecionando_parte' ? `
+      <div class="partes-container" style="margin-top: 4px;">
+        ${partesHTML}
+      </div>
+      ` : ''}
+      
+      <!-- Info do Jogador -->
+      <div class="barra-hp-container" style="margin-top: 6px; border-top: 1px solid #333; padding-top: 6px;">
+        <span style="color: #2d4a1e; font-weight: bold;">[JOGADOR]</span>
+        <span>${window.GameState.nomeJogador}</span>
+        <span>Vida:</span>
+        <div class="barra-hp" style="flex: 1; max-width: 150px;">
+          <div class="barra-hp-fill jogador" style="width: ${hpPorcentagemJogador}%;"></div>
+        </div>
+        <span>${window.GameState.statusVida}/100</span>
+        <span style="margin-left: 12px;">San:</span>
+        <span>${window.GameState.statusSanidade}/100</span>
+        <span style="margin-left: 12px;">Inv:</span>
+        <span>${window.GameState.inventario.length}/5</span>
+      </div>
+      
+      <!-- Ações de combate -->
+      <div class="acoes-combate" style="margin-top: 8px;">
+        <button class="btn-acao-combate" data-acao="atacar">ATACAR ▾</button>
+        <button class="btn-acao-combate" data-acao="usar_item">USAR ITEM</button>
+        <button class="btn-acao-combate" data-acao="fugir">FUGIR</button>
+        <button class="btn-acao-combate" data-acao="examinar">EXAMINAR</button>
+      </div>
+      
+      <!-- Log de combate -->
+      <div class="log-combate" id="log-combate-msg">
+        Turno ${window.GameState.turnoCombate}: Selecione uma ação.
+      </div>
+    </div>
+  `;
+  
+  // Adicionar event listeners para as ações
+  elementos.textoDialogo.querySelectorAll('.btn-acao-combate').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const acao = btn.dataset.acao;
+      resolverAcaoJogador(acao);
+    });
+  });
+  
+  // Adicionar event listeners para as partes do corpo
+  elementos.textoDialogo.querySelectorAll('.parte-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const parte = btn.dataset.parte;
+      if (!btn.classList.contains('destruida')) {
+        resolverAtaqueParte(parte);
       }
     });
-    elementos.escolhasContainer.appendChild(botao);
   });
 }
 
-function iniciarCombate(inimigo) {
-  const baseInimigo = BESTIARIO_COMBATE[inimigo] || BESTIARIO_COMBATE['Barata Americana'];
+/**
+ * Exibe mensagem no log de combate
+ */
+function logCombate(mensagem) {
+  const logEl = document.getElementById('log-combate-msg');
+  if (logEl) {
+    logEl.textContent = mensagem;
+  }
+  registrarHistorico(`Combate: ${mensagem}`);
+}
+
+/**
+ * Inicia o combate com os dados do inimigo
+ */
+function iniciarCombate(dadosInimigo) {
+  // Buscar inimigo no bestiário por ID ou nome
+  let baseInimigo = BESTIARIO_COMBATE[dadosInimigo] || BESTIARIO_COMBATE['barata_americana'];
+  
+  // Se não encontrou, criar inimigo padrão
+  if (!baseInimigo) {
+    baseInimigo = {
+      id: 'desconhecido',
+      nome: 'Inimigo Desconhecido',
+      hp: 30,
+      dano: 8,
+      agilidade: 5,
+      velocidade: 5,
+      partes: {
+        cabeca: { hp: 10, destruida: false, efeito_destruicao: 'morte_instantanea' },
+        tronco: { hp: 15, destruida: false, efeito_destruicao: 'sangramento_grave' }
+      },
+      tracos: [],
+      statusAtivos: []
+    };
+  }
+  
   window.GameState.emCombate = true;
   window.GameState.turnoCombate = 1;
   window.GameState.acoesDisponiveis = ['atacar', 'usar_item', 'fugir', 'examinar'];
+  window.GameState.alvoSelecionado = null;
+  
+  // Clonar inimigo e inicializar estado de combate
   window.GameState.inimigoAtual = {
     ...baseInimigo,
-    hpMaximo: baseInimigo.hp
+    hpMaximo: baseInimigo.hp,
+    turnoAtual: 0,
+    statusAtivos: [],
+    partes: JSON.parse(JSON.stringify(baseInimigo.partes || {}))
   };
+  
   registrarHistorico(`Combate iniciado contra ${window.GameState.inimigoAtual.nome}.`);
   renderCombate();
 }
 
-function resolverAcaoCombatente(tipoAcao, alvo = null) {
+/**
+ * Processa a ação escolhida pelo jogador
+ */
+function resolverAcaoJogador(acao) {
   const inimigo = window.GameState.inimigoAtual;
-  const formulas = configuracaoPersonagem?.formulas_combate || {};
+  
+  switch (acao) {
+    case 'atacar':
+      // Entrar em modo de seleção de parte
+      window.GameState.alvoSelecionado = 'selecionando_parte';
+      logCombate('Selecione a parte do corpo para atacar.');
+      renderCombate();
+      break;
+      
+    case 'usar_item':
+      resolverUsarItem();
+      break;
+      
+    case 'fugir':
+      resolverFuga();
+      break;
+      
+    case 'examinar':
+      resolverExaminar();
+      break;
+  }
+}
 
-  switch (tipoAcao) {
-    case 'atacar': {
-      const arma = obterPrimeiraArma();
-      const danoArma = arma && arma.dano ? Math.round((arma.dano.min + arma.dano.max) / 2) : 2;
-      const bonusCombativo = window.GameState.tracos.includes('combativo') ? 1 : 0;
-      const multiplicadorForca = typeof formulas.dano_melee === 'string' ? 1.5 : 1.5;
-      const dano = Math.max(1, Math.round((window.GameState.atributos.forca * multiplicadorForca) + danoArma + bonusCombativo));
-      inimigo.hp = Math.max(0, inimigo.hp - dano);
-      if (inimigo.hp === 0) {
-        window.GameState.emCombate = false;
-        window.GameState.inimigoAtual = null;
-        window.GameState.turnoCombate = 0;
-        salvarProgresso();
-        return { resultado: `Você derrotou ${inimigo.nome}.`, dados: { dano, alvo } };
-      }
-      window.GameState.turnoCombate += 1;
-      return { resultado: `Ataque causou ${dano} de dano.`, dados: { dano, hpInimigo: inimigo.hp, alvo } };
+/**
+ * Resolve o ataque a uma parte específica do inimigo
+ */
+function resolverAtaqueParte(parteAlvo) {
+  const inimigo = window.GameState.inimigoAtual;
+  
+  if (!inimigo.partes || !inimigo.partes[parteAlvo]) {
+    logCombate('Parte do corpo inválida.');
+    return;
+  }
+  
+  const parte = inimigo.partes[parteAlvo];
+  if (parte.destruida) {
+    logCombate(`Esta parte já está destruída!`);
+    return;
+  }
+  
+  // Calcular dano
+  const arma = obterPrimeiraArma();
+  const danoArma = arma && arma.dano ? Math.round((arma.dano.min + arma.dano.max) / 2) : 2;
+  const bonusCombativo = window.GameState.tracos.includes('combativo') ? 1 : 0;
+  const danoBase = window.GameState.atributos.forca * 1.5;
+  const danoTotal = Math.floor(danoBase + danoArma + bonusCombativo);
+  
+  // Aplicar dano na parte
+  parte.hp = Math.max(0, parte.hp - danoTotal);
+  
+  // Aplicar dano no HP total também
+  inimigo.hp = Math.max(0, inimigo.hp - danoTotal);
+  
+  const nomeParte = parteAlvo.replace('_', ' ').toLowerCase();
+  
+  // Verificar se a parte foi destruída
+  if (parte.hp <= 0 && !parte.destruida) {
+    parte.destruida = true;
+    aplicarEfeitoDestruicao(parte.efeito_destruicao, inimigo);
+    logCombate(`Você acertou ${nomeParte} por ${danoTotal} de dano e DESTRUIU a parte!`);
+  } else {
+    logCombate(`Você acertou ${nomeParte} por ${danoTotal} de dano.`);
+  }
+  
+  // Sair do modo de seleção
+  window.GameState.alvoSelecionado = null;
+  
+  // Verificar vitória
+  if (inimigo.hp <= 0) {
+    encerrarCombate('vitoria');
+    return;
+  }
+  
+  // Avançar para turno do inimigo
+  setTimeout(() => resolverTurnoInimigo(), 800);
+}
+
+/**
+ * Aplica efeitos de destruição de parte
+ */
+function aplicarEfeitoDestruicao(efeito, inimigo) {
+  switch (efeito) {
+    case 'morte_instantanea':
+      inimigo.hp = 0;
+      logCombate(`${inimigo.nome} morre instantaneamente!`);
+      break;
+      
+    case 'sangramento_grave':
+      inimigo.statusAtivos.push({ tipo: 'sangramento_grave', turnosRestantes: 4 });
+      logCombate(`${inimigo.nome} começa a sangrar gravemente!`);
+      break;
+      
+    case 'veneno':
+      window.GameState.statusAtivos = window.GameState.statusAtivos || [];
+      window.GameState.statusAtivos.push({ tipo: 'veneno', turnosRestantes: 4 });
+      logCombate(`Você foi envenenado pelo ${inimigo.nome}!`);
+      break;
+      
+    case 'reduz_velocidade':
+      inimigo.velocidade = Math.max(1, (inimigo.velocidade || 5) - 3);
+      logCombate(`A velocidade de ${inimigo.nome} foi reduzida!`);
+      break;
+      
+    case 'remove_deteccao':
+      inimigo.detectouJogador = false;
+      logCombate(`${inimigo.nome} perdeu a detecção do jogador!`);
+      break;
+      
+    case 'veneno_area':
+      window.GameState.statusAtivos = window.GameState.statusAtivos || [];
+      window.GameState.statusAtivos.push({ tipo: 'veneno', turnosRestantes: 3 });
+      logCombate(`Veneno em área liberado! Você foi afetado.`);
+      break;
+      
+    case 'reduz_dano':
+      inimigo.danoReduzido = true;
+      logCombate(`O dano de ${inimigo.nome} foi reduzido!`);
+      break;
+  }
+}
+
+/**
+ * Resolve o uso de item em combate
+ */
+function resolverUsarItem() {
+  if (window.GameState.inventario.length === 0) {
+    logCombate('Você não tem itens para usar!');
+    setTimeout(() => resolverTurnoInimigo(), 500);
+    return;
+  }
+  
+  // Mostrar lista de itens (simplificado: usa o primeiro item)
+  const itemId = window.GameState.inventario[0];
+  
+  // Buscar dados do item
+  let itemDados = null;
+  for (const categoria of Object.values(bancoItens || {})) {
+    if (Array.isArray(categoria)) {
+      itemDados = categoria.find(i => i.id === itemId || i.nome === itemId);
+      if (itemDados) break;
     }
-    case 'usar_item': {
-      const idItem = window.GameState.inventario[0];
-      if (!idItem) {
-        return { resultado: 'Sem itens no inventário para usar.', dados: {} };
+  }
+  
+  if (itemDados && itemDados.efecto) {
+    const efeito = itemDados.efecto;
+    if (efeito.vida) {
+      window.GameState.statusVida = Math.min(100, window.GameState.statusVida + efeito.vida);
+    }
+    if (efeito.sanidade) {
+      window.GameState.statusSanidade = Math.min(100, window.GameState.statusSanidade + efeito.sanidade);
+    }
+    logCombate(`Você usou ${itemId} e recuperou ${efeito.vida || 0} de vida.`);
+  } else {
+    logCombate(`Você usou ${itemId}.`);
+  }
+  
+  // Remover item do inventário
+  window.GameState.inventario.shift();
+  atualizarStatus();
+  salvarProgresso();
+  
+  setTimeout(() => resolverTurnoInimigo(), 500);
+}
+
+/**
+ * Resolve tentativa de fuga
+ */
+function resolverFuga() {
+  const inimigo = window.GameState.inimigoAtual;
+  
+  // Verificar se há efeito que impede fuga
+  if (inimigo.statusAtivos?.some(s => s.tipo === 'imobilizacao')) {
+    logCombate('Você não pode fugir enquanto está imobilizado!');
+    setTimeout(() => resolverTurnoInimigo(), 500);
+    return;
+  }
+  
+  // Calcular chance de fuga
+  const chanceFuga = (window.GameState.atributos.agilidade * 0.08) + 
+    ((inimigo.velocidade || 5) < window.GameState.atributos.agilidade ? 0.2 : -0.2);
+  const fugaBemSucedida = Math.random() < Math.max(0.05, Math.min(0.95, chanceFuga));
+  
+  if (fugaBemSucedida) {
+    logCombate('Você conseguiu fugir com sucesso!');
+    setTimeout(() => encerrarCombate('fuga'), 1000);
+  } else {
+    logCombate('Você tenta fugir mas o inimigo bloqueia o caminho!');
+    setTimeout(() => resolverTurnoInimigo(), 500);
+  }
+}
+
+/**
+ * Examina o inimigo (não consome turno)
+ */
+function resolverExaminar() {
+  const inimigo = window.GameState.inimigoAtual;
+  
+  let infoExame = `${inimigo.nome}:\n`;
+  infoExame += `HP Total: ${inimigo.hp}/${inimigo.hpMaximo}\n`;
+  
+  if (inimigo.partes) {
+    infoExame += `Partes:\n`;
+    for (const [parteNome, parteDados] of Object.entries(inimigo.partes)) {
+      const nomeParte = parteNome.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+      const statusParte = parteDados.destruida ? 'DESTRUÍDA' : `${parteDados.hp} HP`;
+      infoExame += `  - ${nomeParte}: ${statusParte}\n`;
+    }
+  }
+  
+  if (inimigo.tracos && inimigo.tracos.length > 0) {
+    infoExame += `Traços: ${inimigo.tracos.join(', ')}\n`;
+  }
+  
+  if (inimigo.fraquezas && inimigo.fraquezas.length > 0) {
+    infoExame += `Fraquezas: ${inimigo.fraquezas.join(', ')}`;
+  }
+  
+  alert(infoExame);
+  // Examinar não consome turno
+  renderCombate();
+}
+
+/**
+ * Aplica efeitos de status em uma entidade (jogador ou inimigo)
+ */
+function aplicarEfeitosStatus(entidade, ehJogador = false) {
+  const statusAtivos = entidade.statusAtivos || [];
+  
+  for (let i = statusAtivos.length - 1; i >= 0; i--) {
+    const status = statusAtivos[i];
+    const efeitoConfig = EFEITOS_STATUS[status.tipo];
+    
+    if (!efeitoConfig) continue;
+    
+    // Aplicar dano por turno
+    if (efeitoConfig.dano_por_turno) {
+      if (ehJogador) {
+        window.GameState.statusVida = Math.max(0, window.GameState.statusVida - efeitoConfig.dano_por_turno);
+        logCombate(`${status.tipo} causa ${efeitoConfig.dano_por_turno} de dano em você!`);
+      } else {
+        entidade.hp = Math.max(0, entidade.hp - efeitoConfig.dano_por_turno);
+        logCombate(`${entidade.nome} sofre ${efeitoConfig.dano_por_turno} de dano de ${status.tipo}!`);
       }
-      window.GameState.inventario.shift();
+    }
+    
+    // Decrementar duração
+    status.turnosRestantes--;
+    
+    // Remover se expirou
+    if (status.turnosRestantes <= 0) {
+      statusAtivos.splice(i, 1);
+      logCombate(`Efeito ${status.tipo} expirou.`);
+    }
+  }
+  
+  entidade.statusAtivos = statusAtivos;
+}
+
+/**
+ * Resolve o turno do inimigo
+ */
+function resolverTurnoInimigo() {
+  if (!window.GameState.emCombate || !window.GameState.inimigoAtual) {
+    return;
+  }
+  
+  const inimigo = window.GameState.inimigoAtual;
+  inimigo.turnoAtual++;
+  
+  // Aplicar efeitos de status no inimigo
+  aplicarEfeitosStatus(inimigo, false);
+  
+  // Verificar se inimigo morreu por efeitos de status
+  if (inimigo.hp <= 0) {
+    encerrarCombate('vitoria');
+    return;
+  }
+  
+  // Verificar traços de comportamento
+  if (inimigo.tracos?.includes('fuga_baixo_hp') && inimigo.hp < inimigo.hpMaximo * 0.3) {
+    logCombate(`${inimigo.nome} recua assustado!`);
+    setTimeout(() => encerrarCombate('fuga_inimigo'), 1000);
+    return;
+  }
+  
+  // Verificar atordoamento
+  if (inimigo.statusAtivos?.some(s => s.tipo === 'atordoamento')) {
+    logCombate(`${inimigo.nome} está atordoado e perde o turno!`);
+    window.GameState.turnoCombate++;
+    renderCombate();
+    return;
+  }
+  
+  // Ataque básico do inimigo
+  const acerto = Math.random() < (0.7 + (inimigo.agilidade || 5) * 0.02);
+  
+  if (acerto) {
+    const danoBase = inimigo.dano || 8;
+    const dano = danoBase + Math.floor(Math.random() * 5);
+    
+    // Aplicar dano ao jogador
+    window.GameState.statusVida = Math.max(0, window.GameState.statusVida - dano);
+    logCombate(`${inimigo.nome} ataca! Você recebe ${dano} de dano.`);
+    
+    // Verificar colapso mental por sanidade baixa
+    if (window.GameState.statusVida <= 0) {
+      setTimeout(() => encerrarCombate('derrota'), 1000);
+      return;
+    }
+  } else {
+    logCombate(`${inimigo.nome} ataca mas erra!`);
+  }
+  
+  // Aplicar efeitos de status no jogador
+  window.GameState.statusAtivos = window.GameState.statusAtivos || [];
+  aplicarEfeitosStatus({ statusAtivos: window.GameState.statusAtivos }, true);
+  
+  window.GameState.turnoCombate++;
+  atualizarStatus();
+  verificarFimCombate();
+  renderCombate();
+}
+
+/**
+ * Verifica condições de fim de combate
+ */
+function verificarFimCombate() {
+  if (!window.GameState.inimigoAtual) {
+    return;
+  }
+  
+  if (window.GameState.inimigoAtual.hp <= 0) {
+    encerrarCombate('vitoria');
+  } else if (window.GameState.statusVida <= 0) {
+    encerrarCombate('derrota');
+  }
+}
+
+/**
+ * Encerra o combate e processa o resultado
+ */
+function encerrarCombate(resultado) {
+  window.GameState.emCombate = false;
+  window.GameState.inimigoAtual = null;
+  window.GameState.turnoCombate = 0;
+  window.GameState.alvoSelecionado = null;
+  
+  switch (resultado) {
+    case 'vitoria':
+      logCombate('Você venceu o combate!');
+      // Loot: adicionar drops se houver espaço
+      if (window.GameState.inimigoAtual?.drops) {
+        for (const drop of window.GameState.inimigoAtual.drops) {
+          if (window.GameState.inventario.length < 5) {
+            window.GameState.inventario.push(drop);
+            logCombate(`Obteve: ${drop}`);
+          }
+        }
+      }
       atualizarStatus();
       salvarProgresso();
-      window.GameState.turnoCombate += 1;
-      return { resultado: `Item ${idItem} consumido em combate.`, dados: { item: idItem } };
-    }
-    case 'fugir': {
-      const velocidadeInimigo = inimigo?.velocidade || 5;
-      const chanceFuga = (window.GameState.atributos.agilidade * 0.08) + (velocidadeInimigo < window.GameState.atributos.agilidade ? 0.2 : -0.2);
-      if (Math.random() < Math.max(0.05, Math.min(0.95, chanceFuga))) {
-        window.GameState.emCombate = false;
-        window.GameState.inimigoAtual = null;
-        window.GameState.turnoCombate = 0;
-        salvarProgresso();
-        return { resultado: 'Fuga bem-sucedida.', dados: { chanceFuga } };
-      }
-      window.GameState.turnoCombate += 1;
-      return { resultado: 'Falha ao fugir.', dados: { chanceFuga } };
-    }
-    case 'examinar': {
-      const fraquezas = Array.isArray(inimigo?.fraquezas) ? inimigo.fraquezas : [];
-      window.GameState.turnoCombate += 1;
-      return { resultado: `Fraquezas identificadas: ${fraquezas.join(', ') || 'nenhuma'}.`, dados: { fraquezas } };
-    }
-    default:
-      return { resultado: 'Ação inválida.', dados: { tipoAcao, alvo } };
+      setTimeout(() => renderCena(window.GameState.cenaAtual), 2000);
+      break;
+      
+    case 'derrota':
+      logCombate('Você foi derrotado...');
+      setTimeout(() => renderCena('game_over'), 1500);
+      break;
+      
+    case 'fuga':
+      setTimeout(() => renderCena(window.GameState.cenaAnterior || 'exploracao_01'), 1000);
+      break;
+      
+    case 'fuga_inimigo':
+      logCombate('O inimigo fugiu!');
+      setTimeout(() => renderCena(window.GameState.cenaAtual), 2000);
+      break;
   }
 }
 
@@ -720,9 +1154,26 @@ async function carregarConfiguracaoPersonagem() {
     if (respostaItens.ok) {
       bancoItens = await respostaItens.json();
     }
+
+    // Carregar bestiário para o sistema de combate
+    const respostaBestiario = await fetch('data/bestiary.json');
+    if (respostaBestiario.ok) {
+      const dadosBestiario = await respostaBestiario.json();
+      // Indexar inimigos por ID e também por nome para compatibilidade
+      BESTIARIO_COMBATE = {};
+      for (const inimigo of dadosBestiario.inimigos || []) {
+        // Indexar por ID
+        BESTIARIO_COMBATE[inimigo.id] = inimigo;
+        // Indexar por nome para compatibilidade com cenas antigas
+        BESTIARIO_COMBATE[inimigo.nome] = inimigo;
+      }
+      window.GameState.bestiario = BESTIARIO_COMBATE;
+      Logger.info('COMBATE', 'Bestiário carregado com sucesso.', { total: Object.keys(dadosBestiario.inimigos || {}).length });
+    }
   } catch (erro) {
     configuracaoPersonagem = {};
     registrarHistorico(`Aviso: character.json indisponível (${erro.message}).`);
+    Logger.warn('COMBATE', 'Falha ao carregar bestiário.', { erro: erro.message });
   } finally {
     recalcularStatusMaximos();
     atualizarStatus();
