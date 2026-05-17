@@ -1,3 +1,1 @@
-```json
-
-```
+Nothing should be ignored based on the provided file changes. The modification of 'game.js' is a source code file that should not be added to .gitignore.
