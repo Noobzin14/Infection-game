@@ -263,6 +263,13 @@ function avancarCena(escolha, textoEscolha) {
     registrarHistorico('Ação de cena bloqueada durante combate.');
     return;
   }
+  
+  // Verificar comando especial __recomecar__
+  if (escolha.proxima === '__recomecar__' || escolha.next_scene === '__recomecar__') {
+    window.location.reload();
+    return;
+  }
+  
   const resultadoEfeitos = aplicarEfeitos(escolha.efeito);
   if (resultadoEfeitos === 'INVENTARIO_CHEIO') {
     registrarHistorico(`Escolha bloqueada por inventário cheio: ${textoEscolha || 'Sem texto'}`);
@@ -545,7 +552,7 @@ function renderCena(id) {
   // Salvar cena anterior antes de iniciar combate (para retorno após vitória/fuga)
   if (cenaRenderizavel.combate && !window.GameState.emCombate) {
     window.GameState.cenaAnterior = id;
-    iniciarCombate(cenaRenderizavel.combate.inimigo);
+    iniciarCombate(cenaRenderizavel.combate.inimigo, id);
     return;
   }
 
@@ -724,12 +731,15 @@ function logCombate(mensagem) {
 /**
  * Inicia o combate com os dados do inimigo
  */
-function iniciarCombate(dadosInimigo) {
+function iniciarCombate(dadosInimigo, cenaId) {
   // Verificar se o bestiário foi carregado
   if (!BESTIARIO_COMBATE || Object.keys(BESTIARIO_COMBATE).length === 0) {
     Logger.error('COMBATE', 'Bestiário não carregado. Impossível iniciar combate.');
     Logger.info('COMBATE', 'Inimigos disponíveis: nenhum (bestiário vazio)');
     // Renderizar cena normalmente sem combate
+    if (cenaId) {
+      renderCena(cenaId);
+    }
     return;
   }
   
@@ -741,6 +751,9 @@ function iniciarCombate(dadosInimigo) {
     Logger.error('COMBATE', 'Inimigo não encontrado: ' + dadosInimigo);
     Logger.info('COMBATE', 'Inimigos disponíveis: ' + Object.keys(BESTIARIO_COMBATE).join(', '));
     // Renderizar cena normalmente sem combate
+    if (cenaId) {
+      renderCena(cenaId);
+    }
     return;
   }
   
@@ -901,7 +914,9 @@ function aplicarEfeitoDestruicao(efeito, inimigo) {
 function resolverUsarItem() {
   if (window.GameState.inventario.length === 0) {
     logCombate('Inventário vazio.');
-    setTimeout(() => resolverTurnoInimigo(), 500);
+    // Não passa turno, apenas informa e retorna ao estado normal de combate
+    window.GameState.alvoSelecionado = null;
+    renderCombate();
     return;
   }
   
