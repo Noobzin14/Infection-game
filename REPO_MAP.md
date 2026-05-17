@@ -32,6 +32,11 @@ Infection-game/
 │                           # LUPA: inspetor visual com tooltip, highlight e fixação
 │                           # Dependências: game.js (globais), logger.js
 │
+├── data/
+│   ├── character.json        # Configuração de atributos e fórmulas do personagem
+│   ├── items.json            # Banco de dados de itens, armas e efeitos
+│   └── bestiary.json         # Bestiário de inimigos com partes destruíveis (NOVO)
+│
 ├── story/
 │   └── chapter1.json       # Roteiro do Capítulo 1 — "Despertar"
 │                           # 7 cenas: intro_01 até porta_fresta
