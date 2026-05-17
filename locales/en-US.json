@@ -13,6 +13,7 @@
     "vida": "Health",
     "sanidade": "Sanity",
     "inventario": "Inventory",
-    "atributos": "Attributes"
+    "atributos": "Attributes",
+    "save_incompativel": "Previous save is incompatible — a new game has started."
   }
 }

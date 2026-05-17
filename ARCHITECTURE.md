@@ -142,3 +142,38 @@ index.html
 - Combate por turnos com partes do corpo destruíveis
 - Sistema de craft
 - Bestiário com traços, HP, dano, agilidade por espécie
+
+---
+
+## Sistema de Persistência
+
+### Chave e versionamento
+- Persistência via `localStorage` na chave versionada `infection_game_save_v1`.
+- Todo save inclui o campo obrigatório `versao` (atual: `"1"`).
+- No load, saves com `versao` incompatível devem ser descartados, removidos da chave e sinalizados ao jogador.
+
+### Quando salvar
+- Ao avançar de cena (após processar escolha e transição).
+- Ao aplicar efeitos que alteram progresso (ex.: vida, sanidade, inventário, atributos, traços).
+
+### O que salvar
+Campos persistidos do `GameState`:
+- `nomeJogador`
+- `cenaAtual`
+- `capituloAtual`
+- `statusVida`
+- `statusSanidade`
+- `inventario`
+- `atributos`
+- `tracos`
+
+Campos explicitamente excluídos:
+- `historicoSessao`
+- Estado temporário de combate (`emCombate`, `inimigoAtual`, turno e ações temporárias)
+- Dados do DevMode
+
+### Fluxo de load
+1. Ler `infection_game_save_v1` do `localStorage`.
+2. Parsear JSON e validar `versao`.
+3. Se compatível, restaurar apenas os campos permitidos.
+4. Se incompatível, remover save, iniciar novo jogo e mostrar aviso discreto.
