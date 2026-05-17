@@ -49,10 +49,12 @@ O campo `efeito` nas escolhas só pode conter:
 
 Nenhum outro campo de efeito deve ser processado sem atualizar este arquivo.
 
-### I6 — Histórico de sessão
-O histórico existe apenas em memória.
-Nunca deve ser salvo em `localStorage`, `sessionStorage` ou cookies.
-Ao recarregar a página, o histórico é perdido — isso é comportamento esperado.
+### I6 — Persistência de dados
+O histórico de sessão (`historicoSessao`) existe apenas em memória e é perdido ao recarregar — comportamento intencional.
+O progresso do jogador (atributos, inventário, cena atual, status, traços) **PODE** ser salvo em `localStorage` sob a chave versionada `infection_game_save_v1`.
+O save deve sempre incluir um campo `versao` para validação de compatibilidade.
+Saves de versões incompatíveis devem ser descartados com aviso ao jogador.
+Nunca salvar: `historicoSessao`, estado de combate temporário, ou dados do DevMode.
 
 ---
 

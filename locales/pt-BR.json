@@ -13,6 +13,7 @@
     "vida": "Vida",
     "sanidade": "Sanidade",
     "inventario": "Inventário",
-    "atributos": "Atributos"
+    "atributos": "Atributos",
+    "save_incompativel": "Save anterior incompatível — novo jogo iniciado."
   }
 }

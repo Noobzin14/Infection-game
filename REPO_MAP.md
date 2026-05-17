@@ -15,7 +15,15 @@ Infection-game/
 ├── game.js                 # Motor completo do jogo
 │                           # Carrega story/chapter1.json via fetch
 │                           # Gerencia estado global, telas, cenas
+│                           # Inclui save/load, loader dinâmico, internacionalização base e sistema de combate (estrutura)
 │                           # Dependências: index.html (DOM), story/*.json
+│
+├── locales/
+│   ├── pt-BR.json          # Strings em português do Brasil
+│   └── en-US.json          # Strings em inglês (EUA)
+│
+├── tests/
+│   └── game.test.js        # Suíte de testes unitários para funções centrais
 │
 ├── dev-mode.js             # Painel oculto de modo desenvolvedor
 │                           # Ativado por sequência de teclado "devmode"

@@ -114,6 +114,10 @@ function t(locales, localeAtivo, chave, fallback = '', locale = localeAtivo, con
   });
 }
 
+function validarVersaoSave(save, versaoAtual = '1') {
+  return Boolean(save && save.versao === versaoAtual);
+}
+
 // 4.4.2 aplicarEfeitos
 // ADIÇÃO
 test('aplicarEfeitos: vida positivo/negativo e limites 0-100', () => {
@@ -251,6 +255,18 @@ test('t: locale não carregado retorna fallback', () => {
   const r = t(locales, 'pt-BR', 'ui.vida', 'Health', 'en-US');
   assert(r === 'Health', 'locale ausente deve retornar fallback');
   return { pass: true, message: 'fallback por locale ausente validado' };
+});
+
+test('persistência: save com versão 1 é compatível', () => {
+  const save = { versao: '1', cenaAtual: 'intro_01' };
+  assert(validarVersaoSave(save, '1') === true, 'save versão 1 deve ser compatível');
+  return { pass: true, message: 'versão compatível validada' };
+});
+
+test('persistência: save com versão diferente é incompatível', () => {
+  const save = { versao: '2', cenaAtual: 'intro_01' };
+  assert(validarVersaoSave(save, '1') === false, 'save versão divergente deve ser incompatível');
+  return { pass: true, message: 'versão incompatível validada' };
 });
 
 // ADIÇÃO

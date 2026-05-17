@@ -91,6 +91,26 @@
         "Inventário"
       ],
       "status": "Implementado"
+    },
+    "sistema_persistencia": {
+      "descricao": "Save/load via localStorage com chave infection_game_save_v1",
+      "versao_atual": "1",
+      "campos_salvos": [
+        "nomeJogador",
+        "cenaAtual",
+        "capituloAtual",
+        "statusVida",
+        "statusSanidade",
+        "inventario",
+        "atributos",
+        "tracos"
+      ],
+      "campos_excluidos": [
+        "historicoSessao",
+        "emCombate",
+        "inimigoAtual"
+      ],
+      "status": "Implementado"
     }
   },
   "bestiario": [

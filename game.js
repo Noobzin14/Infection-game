@@ -34,9 +34,11 @@ let textoCompletoAtual = '';
 
 
 const CHAVE_SALVAMENTO = 'infection_game_save_v1';
+const VERSAO_SAVE_ATUAL = '1';
 
 function criarSnapshotProgresso() {
   return {
+    versao: VERSAO_SAVE_ATUAL,
     nomeJogador: window.GameState.nomeJogador,
     capituloAtual: window.GameState.capituloAtual,
     cenaAtual: window.GameState.cenaAtual,
@@ -93,11 +95,42 @@ function carregarProgressoSalvo() {
       return null;
     }
     const dados = JSON.parse(bruto);
+    if (dados?.versao !== VERSAO_SAVE_ATUAL) {
+      window.localStorage.removeItem(CHAVE_SALVAMENTO);
+      Logger.warn('JOGO', 'Save incompatível descartado');
+      exibirToastDiscreto(t('ui.save_incompativel', 'Save anterior incompatível — novo jogo iniciado.'));
+      return false;
+    }
     return restaurarProgressoSalvo(dados);
   } catch (erro) {
     Logger.warn('SAVE', 'Falha ao carregar progresso salvo.', { erro: erro.message });
     return null;
   }
+}
+
+function exibirToastDiscreto(mensagem) {
+  const toast = document.createElement('div');
+  toast.textContent = mensagem;
+  toast.style.position = 'fixed';
+  toast.style.right = '16px';
+  toast.style.bottom = '16px';
+  toast.style.zIndex = '9999';
+  toast.style.padding = '8px 12px';
+  toast.style.border = '1px solid rgba(139, 0, 0, 0.85)';
+  toast.style.background = 'rgba(10, 10, 10, 0.9)';
+  toast.style.color = '#f0f0f0';
+  toast.style.borderRadius = '6px';
+  toast.style.fontSize = '12px';
+  toast.style.opacity = '0';
+  toast.style.transition = 'opacity 0.2s ease';
+  document.body.appendChild(toast);
+  requestAnimationFrame(() => {
+    toast.style.opacity = '1';
+  });
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    setTimeout(() => toast.remove(), 250);
+  }, 2400);
 }
 
 
