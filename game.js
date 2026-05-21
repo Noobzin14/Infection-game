@@ -552,14 +552,13 @@ function renderCena(id) {
 
   // Salvar cena anterior antes de iniciar combate (para retorno após vitória/fuga)
   const combateCena = cenaRenderizavel.combate;
-  const combateNaoObrigatorio = combateCena && combateCena.obrigatorio === false;
   const pularCombateUmaVez = window.GameState.combateEncerrado === true;
 
   if (pularCombateUmaVez) {
     window.GameState.combateEncerrado = false;
   }
 
-  if (combateCena && !window.GameState.emCombate && !(pularCombateUmaVez && combateNaoObrigatorio)) {
+  if (combateCena && !window.GameState.emCombate && !pularCombateUmaVez) {
     window.GameState.cenaAnterior = id;
     iniciarCombate(combateCena.inimigo, id);
     return;
