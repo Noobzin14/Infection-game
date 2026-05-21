@@ -600,14 +600,18 @@ function renderCombate() {
   const hpPorcentagemInimigo = Math.round((inimigo.hp / inimigo.hpMaximo) * 100);
   const hpPorcentagemJogador = Math.round((window.GameState.statusVida / 100) * 100);
   
-  // Gerar botões das partes do corpo
+  // Gerar botões das partes do corpo (somente partes não destruídas)
   let partesHTML = '';
-  if (inimigo.partes) {
-    for (const [parteNome, parteDados] of Object.entries(inimigo.partes)) {
-      const destruidaClasse = parteDados.destruida ? 'destruida' : '';
+  const partesDisponiveis = Object.entries(inimigo.partes || {})
+    .filter(([, parteDados]) => !parteDados.destruida);
+
+  if (partesDisponiveis.length > 0) {
+    for (const [parteNome] of partesDisponiveis) {
       const nomeParte = parteNome.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-      partesHTML += `<button class="parte-btn ${destruidaClasse}" data-parte="${parteNome}" ${parteDados.destruida ? 'disabled' : ''}>${nomeParte}</button>`;
+      partesHTML += `<button class="parte-btn" data-parte="${parteNome}">${nomeParte}</button>`;
     }
+  } else {
+    partesHTML = '<span style="color: #888; font-style: italic;">Nenhuma parte disponível.</span>';
   }
   
   // Gerar lista de itens do inventário
@@ -810,6 +814,10 @@ function resolverAcaoJogador(acao) {
  * Resolve o ataque a uma parte específica do inimigo
  */
 function resolverAtaqueParte(parteAlvo) {
+  if (!window.GameState.emCombate) {
+    return;
+  }
+
   // Verificar se o inimigo ainda existe (pode ter sido perdido durante o combate)
   if (!window.GameState.inimigoAtual) {
     Logger.error('COMBATE', 'Inimigo atual é null em resolverAtaqueParte.');
@@ -1155,15 +1163,18 @@ function verificarFimCombate() {
   }
 }
 
+function limparEstadoCombate() {
+  window.GameState.inimigoAtual = null;
+  window.GameState.turnoCombate = 0;
+  window.GameState.alvoSelecionado = null;
+}
+
 /**
  * Encerra o combate e processa o resultado
  */
 function encerrarCombate(resultado) {
   window.GameState.emCombate = false;
   const inimigoDerrotado = window.GameState.inimigoAtual;
-  window.GameState.inimigoAtual = null;
-  window.GameState.turnoCombate = 0;
-  window.GameState.alvoSelecionado = null;
   
   switch (resultado) {
     case 'vitoria':
@@ -1181,22 +1192,32 @@ function encerrarCombate(resultado) {
       salvarProgresso();
       // Limpar painel de combate e restaurar área de diálogo normal após 2 segundos
       setTimeout(() => {
+        limparEstadoCombate();
         renderCena(window.GameState.cenaAnterior || 'exploracao_01');
       }, 2000);
       break;
       
     case 'derrota':
       logCombate('Você foi derrotado...');
-      setTimeout(() => renderCena('game_over'), 1500);
+      setTimeout(() => {
+        limparEstadoCombate();
+        renderCena('game_over');
+      }, 1500);
       break;
       
     case 'fuga':
-      setTimeout(() => renderCena(window.GameState.cenaAnterior || 'exploracao_01'), 1000);
+      setTimeout(() => {
+        limparEstadoCombate();
+        renderCena(window.GameState.cenaAnterior || 'exploracao_01');
+      }, 1000);
       break;
       
     case 'fuga_inimigo':
       logCombate('O inimigo fugiu!');
-      setTimeout(() => renderCena(window.GameState.cenaAtual), 2000);
+      setTimeout(() => {
+        limparEstadoCombate();
+        renderCena(window.GameState.cenaAtual);
+      }, 2000);
       break;
   }
 }
