@@ -19,6 +19,7 @@ Object.assign(window.GameState, {
   },
   tracos: [],
   emCombate: false,
+  combateEncerrado: false,
   inimigoAtual: null,
   turnoCombate: 0,
   acoesDisponiveis: [],
@@ -550,9 +551,17 @@ function renderCena(id) {
   const escolhasCena = resolverEscolhasLocalizadas(cenaRenderizavel);
 
   // Salvar cena anterior antes de iniciar combate (para retorno após vitória/fuga)
-  if (cenaRenderizavel.combate && !window.GameState.emCombate) {
+  const combateCena = cenaRenderizavel.combate;
+  const combateNaoObrigatorio = combateCena && combateCena.obrigatorio === false;
+  const pularCombateUmaVez = window.GameState.combateEncerrado === true;
+
+  if (pularCombateUmaVez) {
+    window.GameState.combateEncerrado = false;
+  }
+
+  if (combateCena && !window.GameState.emCombate && !(pularCombateUmaVez && combateNaoObrigatorio)) {
     window.GameState.cenaAnterior = id;
-    iniciarCombate(cenaRenderizavel.combate.inimigo, id);
+    iniciarCombate(combateCena.inimigo, id);
     return;
   }
 
@@ -849,6 +858,7 @@ function resolverAtaqueParte(parteAlvo) {
   
   // Aplicar dano no HP total também
   inimigo.hp = Math.max(0, inimigo.hp - danoTotal);
+  Logger.info('COMBATE', `Dano aplicado no inimigo. HP atual: ${inimigo.hp}`);
   
   const nomeParte = parteAlvo.replace('_', ' ').toLowerCase();
   
@@ -863,10 +873,9 @@ function resolverAtaqueParte(parteAlvo) {
   
   // Sair do modo de seleção
   window.GameState.alvoSelecionado = null;
-  
-  // Verificar vitória
-  if (inimigo.hp <= 0) {
-    encerrarCombate('vitoria');
+
+  verificarFimCombate();
+  if (!window.GameState.emCombate) {
     return;
   }
   
@@ -1009,7 +1018,7 @@ function resolverFuga() {
   
   if (fugaBemSucedida) {
     logCombate('Você conseguiu fugir com sucesso!');
-    setTimeout(() => encerrarCombate('fuga'), 1000);
+    encerrarCombate('fuga');
   } else {
     logCombate('Você tenta fugir mas o inimigo bloqueia o caminho!');
     setTimeout(() => resolverTurnoInimigo(), 500);
@@ -1152,6 +1161,7 @@ function resolverTurnoInimigo() {
  * Verifica condições de fim de combate
  */
 function verificarFimCombate() {
+  Logger.info('COMBATE', 'verificarFimCombate chamado — HP inimigo: ' + window.GameState.inimigoAtual?.hp);
   if (!window.GameState.inimigoAtual) {
     return;
   }
@@ -1173,7 +1183,12 @@ function limparEstadoCombate() {
  * Encerra o combate e processa o resultado
  */
 function encerrarCombate(resultado) {
+  if (!window.GameState.emCombate && resultado !== 'fuga_inimigo') {
+    return;
+  }
+
   window.GameState.emCombate = false;
+  window.GameState.combateEncerrado = true;
   const inimigoDerrotado = window.GameState.inimigoAtual;
   
   switch (resultado) {
@@ -1206,6 +1221,7 @@ function encerrarCombate(resultado) {
       break;
       
     case 'fuga':
+      logCombate('Você fugiu do combate.');
       setTimeout(() => {
         limparEstadoCombate();
         renderCena(window.GameState.cenaAnterior || 'exploracao_01');
