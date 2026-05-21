@@ -678,7 +678,7 @@ function renderCombate() {
       <!-- Ações de combate -->
       <div class="acoes-combate" style="margin-top: 8px;">
         <button class="btn-acao-combate" data-acao="atacar">ATACAR ▾</button>
-        <button class="btn-acao-combate" data-acao="usar_item">USAR ITEM</button>
+        <button class="btn-acao-combate" data-acao="usar-item">USAR ITEM</button>
         <button class="btn-acao-combate" data-acao="fugir">FUGIR</button>
         <button class="btn-acao-combate" data-acao="examinar">EXAMINAR</button>
       </div>
@@ -690,13 +690,15 @@ function renderCombate() {
     </div>
   `;
   
-  // Adicionar event listeners para as ações
-  elementos.textoDialogo.querySelectorAll('.btn-acao-combate').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const acao = btn.dataset.acao;
-      resolverAcaoJogador(acao);
-    });
-  });
+  // Adicionar event listeners para as ações principais após inserir HTML no DOM
+  document.querySelector('[data-acao="fugir"]')
+    ?.addEventListener('click', () => resolverAcaoJogador('fugir'));
+  document.querySelector('[data-acao="atacar"]')
+    ?.addEventListener('click', () => resolverAcaoJogador('atacar'));
+  document.querySelector('[data-acao="usar-item"]')
+    ?.addEventListener('click', () => resolverAcaoJogador('usar-item'));
+  document.querySelector('[data-acao="examinar"]')
+    ?.addEventListener('click', () => resolverAcaoJogador('examinar'));
   
   // Adicionar event listeners para as partes do corpo
   elementos.textoDialogo.querySelectorAll('.parte-btn').forEach(btn => {
@@ -790,6 +792,7 @@ function resolverAcaoJogador(acao) {
       break;
       
     case 'usar_item':
+    case 'usar-item':
       resolverUsarItem();
       break;
       
