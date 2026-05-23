@@ -8,6 +8,7 @@ Object.assign(window.GameState, {
   statusSanidade: 100,
   inventario: [],
   historicoSessao: [],
+  cenasVisitadas: [],
   velocidadeTexto: 30,
   capituloAtual: 1,
   atributos: {
@@ -32,6 +33,7 @@ let configuracaoPersonagem = {};
 let intervaloDigitacao = null;
 let digitando = false;
 let textoCompletoAtual = '';
+let inicializacaoEmAndamento = false;
 
 
 const CHAVE_SALVAMENTO = 'infection_game_save_v1';
@@ -517,7 +519,11 @@ function resolverCenaCriacaoDinamica(cena) {
 
 function renderCena(id) {
   const cena = window.GameState.cenas[id];
+  const cenaJaVisitada = window.GameState.cenasVisitadas.includes(id);
   window.GameState.cenaAtual = id;
+  if (!cenaJaVisitada) {
+    window.GameState.cenasVisitadas.push(id);
+  }
   salvarProgresso();
   elementos.escolhasContainer.innerHTML = '';
 
@@ -534,7 +540,21 @@ function renderCena(id) {
     return;
   }
 
-  const cenaRenderizavel = resolverCenaCriacaoDinamica(cena);
+  const cenaRenderizavelBase = resolverCenaCriacaoDinamica(cena);
+  let cenaRenderizavel = cenaRenderizavelBase;
+
+  if (id === 'item_mochila' && cenaJaVisitada) {
+    cenaRenderizavel = {
+      ...cenaRenderizavelBase,
+      texto: t('cenas.item_mochila.vazia', 'A mochila está vazia — você já pegou tudo.'),
+      escolhas: [
+        {
+          texto: t('ui.voltar', 'Voltar'),
+          proxima: 'exploracao_01'
+        }
+      ]
+    };
+  }
 
   if (cenaRenderizavel.tipo === 'criacao') {
     elementos.telaJogo.classList.add('modo-criacao');
@@ -1330,6 +1350,10 @@ elementos.btnIniciar.addEventListener('click', () => {
 });
 
 elementos.btnConfirmar.addEventListener('click', async () => {
+  if (inicializacaoEmAndamento) {
+    return;
+  }
+
   const nomeDigitado = elementos.inputNome.value.trim();
 
   if (!validarNome(nomeDigitado)) {
@@ -1339,18 +1363,24 @@ elementos.btnConfirmar.addEventListener('click', async () => {
 
   elementos.erroNome.textContent = '';
   window.GameState.nomeJogador = nomeDigitado;
-  await carregarConfiguracaoPersonagem();
-  await carregarLocale(window.GameState.locale || 'pt-BR');
+  inicializacaoEmAndamento = true;
 
-  const progresso = carregarProgressoSalvo();
-  const capitulo = progresso?.capitulo || window.GameState.capituloAtual || 1;
-  await carregarCapitulo(capitulo);
-  if (progresso?.cena && window.GameState.cenas[progresso.cena]) {
-    renderCena(progresso.cena);
-    registrarHistorico('Progresso restaurado automaticamente.');
+  try {
+    await carregarConfiguracaoPersonagem();
+    await carregarLocale(window.GameState.locale || 'pt-BR');
+
+    const progresso = carregarProgressoSalvo();
+    const capitulo = progresso?.capitulo || window.GameState.capituloAtual || 1;
+    await carregarCapitulo(capitulo);
+    if (progresso?.cena && window.GameState.cenas[progresso.cena]) {
+      renderCena(progresso.cena);
+      registrarHistorico('Progresso restaurado automaticamente.');
+    }
+
+    salvarProgresso();
+  } finally {
+    inicializacaoEmAndamento = false;
   }
-
-  salvarProgresso();
 });
 
 elementos.inputNome.addEventListener('keydown', (evento) => {

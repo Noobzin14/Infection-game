@@ -267,8 +267,7 @@ body {
 
 #tela-jogo.modo-criacao #btn-historico,
 #tela-jogo.modo-criacao .painel-historico {
-  pointer-events: none;
-  opacity: 0.35;
+  display: none;
 }
 
 /* ============================================ */
