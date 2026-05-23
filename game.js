@@ -370,16 +370,20 @@ function aplicarEfeitos(efeito = {}) {
     }
   }
 
-  if (efeito.inventario) {
-    if (Array.isArray(efeito.inventario)) {
-      for (const item of efeito.inventario) {
-        if (!adicionarItemInventario(item)) {
-          return 'INVENTARIO_CHEIO';
-        }
-      }
-    } else if (!adicionarItemInventario(efeito.inventario)) {
+  if (efeito.inventario !== undefined) {
+    const itens = Array.isArray(efeito.inventario)
+      ? efeito.inventario
+      : [efeito.inventario];
+
+    if (window.GameState.inventario.length + itens.length > 5) {
+      registrarHistorico('Inventário cheio — descarte um item primeiro.');
       return 'INVENTARIO_CHEIO';
     }
+
+    itens.forEach((item) => {
+      window.GameState.inventario.push(item);
+      registrarHistorico(`Item obtido: ${item}`);
+    });
   }
 
   recalcularStatusMaximos();
