@@ -2,6 +2,7 @@
   const SECRET = 'devmode';
   const BUFFER_SIZE = SECRET.length;
   let keyBuffer = '';
+let devToggleKeydownHandler = null;
   let panel = null;
   let activeTab = 'cena';
   let styleTag = null;
@@ -462,12 +463,13 @@
     panel._cleanupDrag = () => { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); document.removeEventListener('touchmove', onTouchMove); document.removeEventListener('touchend', onTouchEnd); };
     renderTab(activeTab); return panel; };
 
-  document.addEventListener('keydown', (e) => {
+  devToggleKeydownHandler = function devToggleKeydownHandler(e) {
     keyBuffer = (keyBuffer + String(e.key || '').toLowerCase()).slice(-BUFFER_SIZE);
     if (keyBuffer !== SECRET) return;
     keyBuffer = '';
     window.DEV_MODE = !window.DEV_MODE;
     if (window.DEV_MODE) { ensureStyles(); buildPanel(); applyDevPatches(); setupDevShortcuts(); showToast('⚙️ Modo Dev ativado'); }
-    else { stopLupa(); panel?._cleanupDrag?.(); panel?.remove(); revertDevPatches(); showToast('⚙️ Modo Dev desativado'); }
-  });
+    else { stopLupa(); panel?._cleanupDrag?.(); panel?.remove(); revertDevPatches(); if (devToggleKeydownHandler) { document.removeEventListener('keydown', devToggleKeydownHandler); document.addEventListener('keydown', devToggleKeydownHandler); } showToast('⚙️ Modo Dev desativado'); }
+  };
+  document.addEventListener('keydown', devToggleKeydownHandler);
 })();

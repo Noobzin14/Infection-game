@@ -118,6 +118,20 @@ function validarVersaoSave(save, versaoAtual = '1') {
   return Boolean(save && save.versao === versaoAtual);
 }
 
+
+function validarSave(save, versaoAtual = '1') {
+  if (!save || typeof save !== 'object') return false;
+  if (save.versao !== versaoAtual) return false;
+  if (typeof save.nomeJogador !== 'string') return false;
+  if (typeof save.statusVida !== 'number' || save.statusVida < 0 || save.statusVida > 100) return false;
+  if (typeof save.statusSanidade !== 'number' || save.statusSanidade < 0 || save.statusSanidade > 100) return false;
+  if (!Array.isArray(save.inventario)) return false;
+  if (!Array.isArray(save.tracos)) return false;
+  if (typeof save.cenaAtual !== 'string') return false;
+  if (!save.atributos || typeof save.atributos !== 'object') return false;
+  return true;
+}
+
 // 4.4.2 aplicarEfeitos
 // ADIÇÃO
 test('aplicarEfeitos: vida positivo/negativo e limites 0-100', () => {
@@ -291,3 +305,11 @@ test('persistência: save com versão diferente é incompatível', () => {
     process.exitCode = 1;
   }
 })();
+
+test('validarSave: rejeita save corrompido por campo', () => {
+  const ok = { versao:'1', nomeJogador:'A', statusVida:80, statusSanidade:70, inventario:[], tracos:[], cenaAtual:'intro_01', atributos:{forca:5} };
+  assert(validarSave(ok) === true, 'save válido deve passar');
+  assert(validarSave({ ...ok, statusVida: null }) === false, 'statusVida inválido deve falhar');
+  assert(validarSave({ ...ok, inventario: 'corrompido' }) === false, 'inventario inválido deve falhar');
+  return { pass: true, message: 'validação de save por campo validada' };
+});
