@@ -555,7 +555,7 @@ function renderCena(id) {
       texto: t('cenas.item_mochila.vazia', 'A mochila está vazia — você já pegou tudo.'),
       escolhas: [
         {
-          texto: t('ui.voltar', 'Voltar'),
+          texto: t('cenas.item_mochila.deixar_e_continuar', 'Deixar para lá e continuar explorando'),
           proxima: 'exploracao_01'
         }
       ]
@@ -578,26 +578,6 @@ function renderCena(id) {
 
   if (id === 'exploracao_01' && window.GameState.cenasVisitadas.includes('item_mochila')) {
     escolhasCena = escolhasCena.filter((escolha) => escolha.proxima !== 'item_mochila' && escolha.next_scene !== 'item_mochila');
-  }
-
-  if (id === 'item_mochila' && window.GameState.cenasVisitadas.includes('item_mochila')) {
-    const jaPegouTudo = window.GameState.inventario.includes("Garrafa d'água")
-      && window.GameState.inventario.includes('Isqueiro')
-      && window.GameState.inventario.includes('Faca enferrujada');
-
-    if (jaPegouTudo) {
-      escolhasCena = escolhasCena.filter((escolha) => {
-        const textoEscolha = (escolha.texto || escolha.text || '').toLowerCase();
-        return !textoEscolha.includes('pegar tudo');
-      });
-    }
-
-    if (jaPegouTudo && escolhasCena.length === 0) {
-      escolhasCena = [{
-        texto: t('ui.voltar', 'Voltar'),
-        proxima: 'exploracao_01'
-      }];
-    }
   }
 
   // Salvar cena anterior antes de iniciar combate (para retorno após vitória/fuga)
