@@ -309,6 +309,7 @@ function renderEscolhas(cena) {
     const textoEscolha = typeof escolha.texto === 'string' ? escolha.texto : (typeof escolha.text === 'string' ? escolha.text : '');
 
     const botao = document.createElement('button');
+    botao.type = 'button';
     botao.className = 'botao-principal botao-escolha';
     botao.textContent = textoEscolha || 'Continuar';
     botao.addEventListener('click', () => avancarCena(escolha, textoEscolha));
@@ -467,6 +468,7 @@ function aplicarClasseBackground(backgroundCena) {
 function criarBotaoRecomecar() {
   elementos.escolhasContainer.innerHTML = '';
   const botao = document.createElement('button');
+  botao.type = 'button';
   botao.className = 'botao-principal botao-escolha';
   botao.textContent = 'Recomeçar';
   botao.addEventListener('click', () => window.location.reload());
@@ -568,7 +570,31 @@ function renderCena(id) {
   aplicarClasseBackground(cenaRenderizavel.background);
 
   const textoCena = resolverTextoLocalizado(cenaRenderizavel.texto) || resolverTextoLocalizado(cenaRenderizavel.text);
-  const escolhasCena = resolverEscolhasLocalizadas(cenaRenderizavel);
+  let escolhasCena = resolverEscolhasLocalizadas(cenaRenderizavel);
+
+  if (id === 'exploracao_01' && window.GameState.cenasVisitadas.includes('item_mochila')) {
+    escolhasCena = escolhasCena.filter((escolha) => escolha.proxima !== 'item_mochila' && escolha.next_scene !== 'item_mochila');
+  }
+
+  if (id === 'item_mochila' && window.GameState.cenasVisitadas.includes('item_mochila')) {
+    const jaPegouTudo = window.GameState.inventario.includes("Garrafa d'água")
+      && window.GameState.inventario.includes('Isqueiro')
+      && window.GameState.inventario.includes('Faca enferrujada');
+
+    if (jaPegouTudo) {
+      escolhasCena = escolhasCena.filter((escolha) => {
+        const textoEscolha = (escolha.texto || escolha.text || '').toLowerCase();
+        return !textoEscolha.includes('pegar tudo');
+      });
+    }
+
+    if (jaPegouTudo && escolhasCena.length === 0) {
+      escolhasCena = [{
+        texto: t('ui.voltar', 'Voltar'),
+        proxima: 'exploracao_01'
+      }];
+    }
+  }
 
   // Salvar cena anterior antes de iniciar combate (para retorno após vitória/fuga)
   const combateCena = cenaRenderizavel.combate;
@@ -636,7 +662,7 @@ function renderCombate() {
   if (partesDisponiveis.length > 0) {
     for (const [parteNome] of partesDisponiveis) {
       const nomeParte = parteNome.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-      partesHTML += `<button class="parte-btn" data-parte="${parteNome}">${nomeParte}</button>`;
+      partesHTML += `<button type="button" class="parte-btn" data-parte="${parteNome}">${nomeParte}</button>`;
     }
   } else {
     partesHTML = '<span style="color: #888; font-style: italic;">Nenhuma parte disponível.</span>';
@@ -660,7 +686,7 @@ function renderCombate() {
             }
           }
         }
-        itensHTML += `<button class="btn-acao-combate" data-item="${itemId}" style="font-size: 11px;">${nomeItem}</button>`;
+        itensHTML += `<button type="button" class="btn-acao-combate" data-item="${itemId}" style="font-size: 11px;">${nomeItem}</button>`;
       }
     }
   }
@@ -709,10 +735,10 @@ function renderCombate() {
       
       <!-- Ações de combate -->
       <div class="acoes-combate" style="margin-top: 8px;">
-        <button class="btn-acao-combate" data-acao="atacar">ATACAR ▾</button>
-        <button class="btn-acao-combate" data-acao="usar-item">USAR ITEM</button>
-        <button class="btn-acao-combate" data-acao="fugir">FUGIR</button>
-        <button class="btn-acao-combate" data-acao="examinar">EXAMINAR</button>
+        <button type="button" class="btn-acao-combate" data-acao="atacar">ATACAR ▾</button>
+        <button type="button" class="btn-acao-combate" data-acao="usar-item">USAR ITEM</button>
+        <button type="button" class="btn-acao-combate" data-acao="fugir">FUGIR</button>
+        <button type="button" class="btn-acao-combate" data-acao="examinar">EXAMINAR</button>
       </div>
       
       <!-- Log de combate -->
@@ -1193,9 +1219,16 @@ function verificarFimCombate() {
 }
 
 function limparEstadoCombate() {
+  const painelCombate = elementos.textoDialogo.querySelector('.painel-combate');
+  if (painelCombate) {
+    painelCombate.replaceWith(painelCombate.cloneNode(false));
+  }
+
+  elementos.textoDialogo.textContent = '';
   window.GameState.inimigoAtual = null;
   window.GameState.turnoCombate = 0;
   window.GameState.alvoSelecionado = null;
+  window.GameState.acoesDisponiveis = [];
 }
 
 /**
