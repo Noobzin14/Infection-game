@@ -25,7 +25,9 @@ Object.assign(window.GameState, {
   turnoCombate: 0,
   acoesDisponiveis: [],
   locale: 'pt-BR',
-  locales: {}
+  locales: {},
+  timersAtivos: [],
+  bestiarioCarregado: false
 });
 
 let configuracaoPersonagem = {};
@@ -111,10 +113,9 @@ function carregarProgressoSalvo() {
       return null;
     }
     const dados = JSON.parse(bruto);
-    if (dados?.versao !== VERSAO_SAVE_ATUAL) {
+    if (!validarSave(dados)) {
       window.localStorage.removeItem(CHAVE_SALVAMENTO);
-      Logger.warn('JOGO', 'Save incompatível descartado');
-      exibirToastDiscreto(t('ui.save_incompativel', 'Save anterior incompatível — novo jogo iniciado.'));
+      exibirToastDiscreto(t('ui.save_invalido', 'Save inválido detectado — novo jogo iniciado.'));
       return false;
     }
     return restaurarProgressoSalvo(dados);
@@ -143,13 +144,67 @@ function exibirToastDiscreto(mensagem) {
   requestAnimationFrame(() => {
     toast.style.opacity = '1';
   });
-  setTimeout(() => {
+  agendarTransicao(() => {
     toast.style.opacity = '0';
-    setTimeout(() => toast.remove(), 250);
+    agendarTransicao(() => toast.remove(), 250);
   }, 2400);
 }
 
 
+
+
+function renderizarTextoSeguro(elemento, texto) {
+  elemento.textContent = '';
+  (texto || '').split('\n').forEach((linha, i) => {
+    if (i > 0) elemento.appendChild(document.createElement('br'));
+    elemento.appendChild(document.createTextNode(linha));
+  });
+}
+
+function agendarTransicao(fn, ms) {
+  if (!window.GameState.timersAtivos) window.GameState.timersAtivos = [];
+  const id = setTimeout(() => {
+    const idx = window.GameState.timersAtivos.indexOf(id);
+    if (idx > -1) window.GameState.timersAtivos.splice(idx, 1);
+    fn();
+  }, ms);
+  window.GameState.timersAtivos.push(id);
+  return id;
+}
+
+function cancelarTimers() {
+  if (!window.GameState.timersAtivos) return;
+  window.GameState.timersAtivos.forEach((id) => clearTimeout(id));
+  window.GameState.timersAtivos = [];
+}
+
+function assertEstadoCombate() {
+  const gs = window.GameState;
+  if (gs.emCombate && !gs.inimigoAtual) {
+    Logger.warn('COMBATE', 'Estado impossível: emCombate=true mas inimigoAtual=null. Corrigindo.');
+    gs.emCombate = false;
+    gs.combateEncerrado = false;
+    gs.turnoCombate = 0;
+  }
+  if (!gs.emCombate && gs.inimigoAtual) {
+    Logger.warn('COMBATE', 'Estado impossível: emCombate=false mas inimigoAtual definido. Corrigindo.');
+    gs.inimigoAtual = null;
+  }
+  if (!gs.emCombate) gs.combateEncerrado = false;
+}
+
+function validarSave(save) {
+  if (!save || typeof save !== 'object') { Logger.warn('JOGO', 'Save inválido: não é um objeto'); return false; }
+  if (save.versao !== VERSAO_SAVE_ATUAL) { Logger.warn('JOGO', `Save incompatível: versão ${save.versao} !== ${VERSAO_SAVE_ATUAL}`); return false; }
+  if (typeof save.nomeJogador !== 'string') { Logger.warn('JOGO', 'Save inválido: nomeJogador ausente ou não-string'); return false; }
+  if (typeof save.statusVida !== 'number' || save.statusVida < 0 || save.statusVida > 100) { Logger.warn('JOGO', `Save inválido: statusVida fora do range (${save.statusVida})`); return false; }
+  if (typeof save.statusSanidade !== 'number' || save.statusSanidade < 0 || save.statusSanidade > 100) { Logger.warn('JOGO', `Save inválido: statusSanidade fora do range (${save.statusSanidade})`); return false; }
+  if (!Array.isArray(save.inventario)) { Logger.warn('JOGO', 'Save inválido: inventario não é array'); return false; }
+  if (!Array.isArray(save.tracos)) { Logger.warn('JOGO', 'Save inválido: tracos não é array'); return false; }
+  if (typeof save.cenaAtual !== 'string') { Logger.warn('JOGO', 'Save inválido: cenaAtual ausente ou não-string'); return false; }
+  if (!save.atributos || typeof save.atributos !== 'object') { Logger.warn('JOGO', 'Save inválido: atributos ausente ou não-objeto'); return false; }
+  return true;
+}
 
 function t(chave, fallback = '', locale = window.GameState.locale, contexto = {}) {
   const dicionario = window.GameState.locales?.[locale] || {};
@@ -269,6 +324,7 @@ function avancarCena(escolha, textoEscolha) {
   
   // Verificar comando especial __recomecar__
   if (escolha.proxima === '__recomecar__' || escolha.next_scene === '__recomecar__') {
+    cancelarTimers();
     window.location.reload();
     return;
   }
@@ -296,7 +352,7 @@ function avancarCena(escolha, textoEscolha) {
   elementos.telaJogo.style.opacity = '0';
   elementos.telaJogo.style.transition = 'opacity 0.3s ease';
 
-  setTimeout(() => {
+  agendarTransicao(() => {
     elementos.telaJogo.style.opacity = '1';
     renderCena(escolha.proxima || escolha.next_scene);
   }, 300);
@@ -421,7 +477,7 @@ function limparDigitacao() {
 function mostrarTextoGradual(texto, aoFinal) {
   limparDigitacao();
   textoCompletoAtual = texto;
-  elementos.textoDialogo.textContent = '';
+  renderizarTextoSeguro(elementos.textoDialogo, '');
   elementos.textoDialogo.style.opacity = '0.95';
   let indice = 0;
   digitando = true;
@@ -434,7 +490,7 @@ function mostrarTextoGradual(texto, aoFinal) {
       return;
     }
 
-    elementos.textoDialogo.textContent += texto[indice];
+    elementos.textoDialogo.appendChild(document.createTextNode(texto[indice]));
     indice += 1;
   }, window.GameState.velocidadeTexto);
 }
@@ -470,7 +526,7 @@ function aplicarClasseBackground(backgroundCena) {
 }
 
 function criarBotaoRecomecar() {
-  elementos.escolhasContainer.innerHTML = '';
+  elementos.escolhasContainer.replaceChildren();
   const botao = document.createElement('button');
   botao.type = 'button';
   botao.className = 'botao-principal botao-escolha';
@@ -524,6 +580,8 @@ function resolverCenaCriacaoDinamica(cena) {
 }
 
 function renderCena(id) {
+  cancelarTimers();
+  assertEstadoCombate();
   const cena = window.GameState.cenas[id];
   const cenaJaVisitada = window.GameState.cenasVisitadas.includes(id);
   window.GameState.cenaAtual = id;
@@ -531,7 +589,7 @@ function renderCena(id) {
     window.GameState.cenasVisitadas.push(id);
   }
   salvarProgresso();
-  elementos.escolhasContainer.innerHTML = '';
+  elementos.escolhasContainer.replaceChildren();
 
   if (!cena) {
     Logger.error('CENA', 'Cena não encontrada para renderização.', {
@@ -776,6 +834,7 @@ function logCombate(mensagem) {
  * Inicia o combate com os dados do inimigo
  */
 function iniciarCombate(dadosInimigo, cenaId) {
+  assertEstadoCombate();
   // Verificar se o bestiário foi carregado
   if (!BESTIARIO_COMBATE || Object.keys(BESTIARIO_COMBATE).length === 0) {
     Logger.error('COMBATE', 'Bestiário não carregado. Impossível iniciar combate.');
@@ -909,7 +968,7 @@ function resolverAtaqueParte(parteAlvo) {
   }
   
   // Avançar para turno do inimigo
-  setTimeout(() => resolverTurnoInimigo(), 800);
+  agendarTransicao(() => resolverTurnoInimigo(), 800);
 }
 
 /**
@@ -1024,7 +1083,7 @@ function usarItemCombate(itemId) {
   
   // Sair do modo de seleção e passar turno para o inimigo
   window.GameState.alvoSelecionado = null;
-  setTimeout(() => resolverTurnoInimigo(), 500);
+  agendarTransicao(() => resolverTurnoInimigo(), 500);
 }
 
 /**
@@ -1036,7 +1095,7 @@ function resolverFuga() {
   // Verificar se há efeito que impede fuga
   if (inimigo.statusAtivos?.some(s => s.tipo === 'imobilizacao')) {
     logCombate('Você não pode fugir enquanto está imobilizado!');
-    setTimeout(() => resolverTurnoInimigo(), 500);
+    agendarTransicao(() => resolverTurnoInimigo(), 500);
     return;
   }
   
@@ -1050,7 +1109,7 @@ function resolverFuga() {
     encerrarCombate('fuga');
   } else {
     logCombate('Você tenta fugir mas o inimigo bloqueia o caminho!');
-    setTimeout(() => resolverTurnoInimigo(), 500);
+    agendarTransicao(() => resolverTurnoInimigo(), 500);
   }
 }
 
@@ -1144,7 +1203,7 @@ function resolverTurnoInimigo() {
   // Verificar traços de comportamento
   if (inimigo.tracos?.includes('fuga_baixo_hp') && inimigo.hp < inimigo.hpMaximo * 0.3) {
     logCombate(`${inimigo.nome} recua assustado!`);
-    setTimeout(() => encerrarCombate('fuga_inimigo'), 1000);
+    agendarTransicao(() => encerrarCombate('fuga_inimigo'), 1000);
     return;
   }
   
@@ -1169,7 +1228,7 @@ function resolverTurnoInimigo() {
     
     // Verificar colapso mental por sanidade baixa
     if (window.GameState.statusVida <= 0) {
-      setTimeout(() => encerrarCombate('derrota'), 1000);
+      agendarTransicao(() => encerrarCombate('derrota'), 1000);
       return;
     }
   } else {
@@ -1242,7 +1301,7 @@ function encerrarCombate(resultado) {
       atualizarStatus();
       salvarProgresso();
       // Limpar painel de combate e restaurar área de diálogo normal após 2 segundos
-      setTimeout(() => {
+      agendarTransicao(() => {
         limparEstadoCombate();
         renderCena(window.GameState.cenaAnterior || 'exploracao_01');
       }, 2000);
@@ -1250,7 +1309,7 @@ function encerrarCombate(resultado) {
       
     case 'derrota':
       logCombate('Você foi derrotado...');
-      setTimeout(() => {
+      agendarTransicao(() => {
         limparEstadoCombate();
         renderCena('game_over');
       }, 1500);
@@ -1258,7 +1317,7 @@ function encerrarCombate(resultado) {
       
     case 'fuga':
       logCombate('Você fugiu do combate.');
-      setTimeout(() => {
+      agendarTransicao(() => {
         limparEstadoCombate();
         renderCena(window.GameState.cenaAnterior || 'exploracao_01');
       }, 1000);
@@ -1266,7 +1325,7 @@ function encerrarCombate(resultado) {
       
     case 'fuga_inimigo':
       logCombate('O inimigo fugiu!');
-      setTimeout(() => {
+      agendarTransicao(() => {
         limparEstadoCombate();
         renderCena(window.GameState.cenaAtual);
       }, 2000);
@@ -1330,22 +1389,7 @@ async function carregarConfiguracaoPersonagem() {
       bancoItens = await respostaItens.json();
     }
 
-    // Carregar bestiário para o sistema de combate
-    const respostaBestiario = await fetch('data/bestiary.json');
-    if (respostaBestiario.ok) {
-      const dadosBestiario = await respostaBestiario.json();
-      // Indexar inimigos por ID e também por nome para compatibilidade
-      BESTIARIO_COMBATE = {};
-      for (const inimigo of dadosBestiario.inimigos || []) {
-        // Indexar por ID
-        BESTIARIO_COMBATE[inimigo.id] = inimigo;
-        // Indexar por nome para compatibilidade com cenas antigas
-        BESTIARIO_COMBATE[inimigo.nome] = inimigo;
-      }
-      window.GameState.bestiario = BESTIARIO_COMBATE;
-      Logger.info('COMBATE', 'Bestiário carregado com sucesso.', { total: Object.keys(BESTIARIO_COMBATE).length });
-      Logger.info('COMBATE', 'Inimigos disponíveis: ' + Object.keys(BESTIARIO_COMBATE).join(', '));
-    }
+
   } catch (erro) {
     configuracaoPersonagem = {};
     registrarHistorico(`Aviso: character.json indisponível (${erro.message}).`);
@@ -1383,12 +1427,12 @@ elementos.btnConfirmar.addEventListener('click', async () => {
   inicializacaoEmAndamento = true;
 
   try {
-    await carregarConfiguracaoPersonagem();
     await carregarLocale(window.GameState.locale || 'pt-BR');
+    await carregarConfiguracaoPersonagem();
 
     const progresso = carregarProgressoSalvo();
     const capitulo = progresso?.capitulo || window.GameState.capituloAtual || 1;
-    await carregarCapitulo(capitulo);
+    await Promise.all([carregarCapitulo(capitulo), carregarBestiario()]);
     if (progresso?.cena && window.GameState.cenas[progresso.cena]) {
       renderCena(progresso.cena);
       registrarHistorico('Progresso restaurado automaticamente.');
@@ -1413,7 +1457,7 @@ elementos.textoDialogo.addEventListener('click', () => {
 
     const cena = window.GameState.cenas[window.GameState.cenaAtual];
     if (cena) {
-      elementos.escolhasContainer.innerHTML = '';
+      elementos.escolhasContainer.replaceChildren();
       renderEscolhas(cena);
     }
   }
@@ -1431,3 +1475,20 @@ elementos.btnFecharHistorico.addEventListener('click', () => {
 
 alternarTela(elementos.telaAbertura);
 atualizarStatus();
+
+async function carregarBestiario() {
+  if (window.GameState.bestiarioCarregado) return;
+  try {
+    const respostaBestiario = await fetch('data/bestiary.json');
+    if (!respostaBestiario.ok) throw new Error(`Falha HTTP ${respostaBestiario.status}`);
+    const dadosBestiario = await respostaBestiario.json();
+    BESTIARIO_COMBATE = {};
+    for (const inimigo of dadosBestiario.inimigos || []) { BESTIARIO_COMBATE[inimigo.id] = inimigo; BESTIARIO_COMBATE[inimigo.nome] = inimigo; }
+    window.GameState.bestiario = BESTIARIO_COMBATE;
+    window.GameState.bestiarioCarregado = true;
+  } catch (erro) {
+    Logger.warn('COMBATE', 'Bestiário não carregado — combate desativado');
+    window.GameState.bestiario = {};
+    BESTIARIO_COMBATE = {};
+  }
+}
