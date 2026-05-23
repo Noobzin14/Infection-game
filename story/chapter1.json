@@ -231,6 +231,7 @@
     },
     {
       "id": "item_mochila",
+      "visitada": true,
       "background": "bunker_dia",
       "personagem": null,
       "texto": "Dentro da mochila: uma garrafa d'água pela metade, um isqueiro e uma faca de cozinha enferrujada.\n\nNada que vá te salvar. Mas algo.",

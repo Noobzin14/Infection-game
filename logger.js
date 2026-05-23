@@ -68,7 +68,7 @@ function log(nivel, categoria, mensagem, dados = null) {
     categoria,
     mensagem,
     dados,
-    cena: typeof cenaAtual !== 'undefined' ? cenaAtual : 'desconhecida',
+    cena: window.GameState?.cenaAtual || 'desconhecida',
     ambiente: LOG_CONFIG.ambiente
   };
 
